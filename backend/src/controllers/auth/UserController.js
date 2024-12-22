@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import User from '../../models/auth/UserModel.js';
 import generateToken from '../../helpers/generateToken.js';
+import bcrypt from 'bcrypt';
 
 export const registerUser = asyncHandler(async (req, res) => {
     const {name,email, password } = req.body;
@@ -78,4 +79,50 @@ export const loginUser = asyncHandler(async (req, res) => {
         return res.status(401).json({ message: 'User not found, please Register' });
     }
 
+    console.log(userExists.password,password);
+
+    const isMatch = await bcrypt.compare(password, userExists.password);
+
+    if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const token = generateToken(userExists._id);
+
+    if (userExists && isMatch){
+        const { _id, name, email, role, photo , bio , isVerified } = userExists;
+    
+
+    res.cookie("token", token, { 
+        path: '/',
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 45, 
+        sameSite: true,
+        secure: true,
+    });
+
+    res.status(200).json({ message: 'User logged in successfully', 
+        _id,
+        name, 
+        email,
+        role,
+        photo,
+        bio,
+        isVerified, 
+        token,
+     });
+    } else {
+        res.status(400).json({ message: 'Invalid credentials' });
+    }
+
 });
+
+export const logoutUser = asyncHandler(async (req, res) => {
+    
+    res.clearCookie("token");
+
+    res.status(200).json({ message: 'User logged out successfully' });
+ 
+});
+
+
