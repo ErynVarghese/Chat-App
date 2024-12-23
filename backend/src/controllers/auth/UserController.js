@@ -3,6 +3,8 @@ import User from '../../models/auth/UserModel.js';
 import generateToken from '../../helpers/generateToken.js';
 import bcrypt from 'bcrypt';
 
+// register 
+
 export const registerUser = asyncHandler(async (req, res) => {
     const {name,email, password } = req.body;
 
@@ -64,7 +66,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 
 });
 
-
+// login 
 export const loginUser = asyncHandler(async (req, res) => {
 
     const {email , password} = req.body;
@@ -117,6 +119,7 @@ export const loginUser = asyncHandler(async (req, res) => {
 
 });
 
+// logout 
 export const logoutUser = asyncHandler(async (req, res) => {
     
     res.clearCookie("token");
@@ -125,7 +128,7 @@ export const logoutUser = asyncHandler(async (req, res) => {
  
 });
 
-
+// get 
 export const UserProfile = asyncHandler(async (req, res) => {
 
     const user = await User.findById(req.user._id).select('-password');
@@ -137,5 +140,34 @@ export const UserProfile = asyncHandler(async (req, res) => {
     }
 
 });
+
+// update 
+export const updateUserProfile = asyncHandler(async (req, res) => {
+
+        const user = await User.findById(req.user._id);
+        
+        if (user){
+            const { name, photo, bio } = req.body;
+        
+            user.name = req.body.name || user.name;
+            user.photo = req.body.photo || user.photo;
+            user.bio = req.body.bio || user.bio;
+        
+            const updated = await user.save();
+
+            res.status(200).json({
+                _id: updated._id,
+                name: updated.name,
+                photo: updated.photo,
+                bio: updated.bio,
+                email: updated.email,
+                role: updated.role,
+            })
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+});
+
+
 
 
