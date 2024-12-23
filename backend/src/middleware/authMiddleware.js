@@ -1,8 +1,8 @@
-import AsyncHandler from "express-async-handler";
+import asyncHandler from "express-async-handler";
 import jwt from "jsonwebtoken";
 import User from "../models/auth/UserModel.js";
 
-export const protect = AsyncHandler(async (req, res, next) => {
+export const protect = asyncHandler(async (req, res, next) => {
     try {
         const token = req.cookies.token;
 
@@ -25,4 +25,26 @@ export const protect = AsyncHandler(async (req, res, next) => {
     } catch (error) {
         res.status(401).json({ message: "Not authorized, Login again" });
     }
+});
+
+export const adminMiddleware = asyncHandler(async (req, res, next) => {
+
+    if (req.user && req.user.role === "admin") {
+        next();
+        return;
+    }
+
+    res.status(403).json({ message: "Not authorized, you are not an admin" });
+
+});
+
+
+export const verifiedMiddleware = asyncHandler(async (req, res, next) => {
+
+    if (req.user && req.user.isVerified) {
+        next();
+        return;
+    }
+
+    res.status(403).json({ message: "Not authorized, your email is not verified" });
 });
