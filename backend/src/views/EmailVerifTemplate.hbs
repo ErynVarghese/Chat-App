@@ -1,0 +1,80 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Your Email</title>
+    <style>
+      * {
+        text-decoration: none;
+      }
+      .container {
+        margin: 0 auto;
+        max-width: 500px;
+        width: 100%;
+        font-family: Arial, sans-serif;
+      }
+      .btn-link {
+        display: inline-block;
+        padding: 12px 25px;
+        background-color: #4caf50; 
+        color: #fff !important;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .btn-link:hover {
+        background-color: #45a049;
+      }
+      img {
+        width: 35px;
+        border-radius: 50%;
+      }
+      .header {
+        background-color: #6a1b9a; 
+        color: white;
+        padding: 10px 15px;
+        border-radius: 5px 5px 0 0;
+      }
+      .footer {
+        background-color: #6a1b9a;
+        color: white;
+        padding: 10px;
+        border-radius: 0 0 5px 5px;
+        text-align: center;
+      }
+      .content {
+        padding: 20px;
+        background-color: #f3f3f3;
+        border-radius: 0 0 5px 5px;
+      }
+      .highlight {
+        color: #4caf50; 
+      }
+      .link-container {
+        margin-top: 20px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>{{subject}}</h2>
+      </div>
+      <div class="content">
+        <p>Dear <b>{{name}}</b>,</p>
+        <p>Thank you for signing up with us! To complete your registration, please verify your email address by clicking the button below.</p>
+        <p>This verification link will expire in 24 hours, so please complete the process soon.</p>
+        <a href="{{link}}" class="btn-link">Verify Your Email</a>
+      </div>
+      <div class="footer">
+        <p>If you did not sign up for an account, please disregard this email.</p>
+
+        <div class="link-container">
+          <p>If you're having trouble clicking the "Verify Your Email" button, copy and paste the URL below into your browser:</p>
+         <a href="{{link}}" class="highlight" style="color: #ffeb3b;">{{link}}</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

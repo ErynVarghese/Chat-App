@@ -2,13 +2,18 @@ import asyncHandler from 'express-async-handler';
 import User from '../../models/auth/UserModel.js';
 import generateToken from '../../helpers/generateToken.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import Token from '../../models/auth/Token.js';
+import crypto from 'crypto';
+import SendEmail from '../../helpers/SendEmail.js';
+import hashedToken from '../../helpers/HashToken.js';
 
 // register 
 
 export const registerUser = asyncHandler(async (req, res) => {
     const {name,email, password } = req.body;
 
-    // Empty figenerateToken;heck
+    
     if (!name || !email || !password) {
         res.status(400).json({ message: 'All fields are required' });
     }
@@ -168,6 +173,83 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
         }
 });
 
+
+
+export const userLoginStatus = asyncHandler(async (req, res) => {
+
+    const token = req.cookies.token;
+
+    if (!token){
+        res.status(401).json({ message: 'User not logged in' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded){
+        res.status(200).json(true);
+    } else {
+        res.status(401).json(false);
+    }
+
+
+});
+
+
+export const verifyEmail= asyncHandler(async (req, res) => {
+
+    const user = await User.findById(req.user._id);
+
+    if(!user){
+        return res.status(404).json({ message: 'User not found' });
+
+    }
+
+    if (user.isVerified){
+
+        return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    let token = await Token.findOne({ userId: user._id});
+
+    if (token){
+        await Token.deleteOne();
+    }
+
+    const verificationToken = crypto.randomBytes(20).toString('hex') + user._id;
+
+    const hashedTokenValue = hashedToken(verificationToken);
+    
+    await new Token({
+        userId: user._id,
+        verificationToken: hashedTokenValue,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 3600000,
+    }).save();
+
+    // verifcation link
+
+    const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+    // send email
+
+    const subject = 'Email Verification - Task Manager App';
+    const send_to = user.email;
+    const reply_to = 'noreply@taskmanagerapp.com';
+    const template = "EmailVerifTemplate";
+    const send_from = process.env.USER_EMAIL;
+    const name = user.name;
+    const link = verificationLink;
+
+    try {
+        await SendEmail(subject, send_to, reply_to, template, name, link, send_from);
+        return res.status(200).json({ message: 'Verification email sent successfully' });
+    } catch (error) {
+        console.log('Failed to send email', error.message);
+        console.error("Error sending email: ", error.response.body);
+        return res.status(500).json({ message: 'Failed to send email' });
+    }
+
+});
 
 
 
