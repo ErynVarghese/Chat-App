@@ -251,5 +251,34 @@ export const verifyEmail= asyncHandler(async (req, res) => {
 
 });
 
+export const verifyUser = asyncHandler(async (req, res) => {
+
+    const { verificationToken } = req.params;
+
+    if(!verificationToken) {
+        return res.status(404).json({ message: 'Verification token not found' });
+    }
+
+    const hashedTokenValue = hashedToken(verificationToken);
+
+    const userToken = await Token.findOne({ verificationToken: hashedTokenValue, expiresAt: {$gt : Date.now()}});
+  
+    if(!userToken) {
+        return res.status(404).json({ message: 'Invalid or expired verification token' });
+    }
+
+    const user = await User.findById(userToken.userId);
+
+    if (user.isVerified){
+        return res.status(400).json({ message: 'Email already verified' });
+
+    }
+
+    user.isVerified = true;
+    await user.save();
+    res.status(200).json({message : "User Successfully Verfied"});
+
+});
+
 
 
