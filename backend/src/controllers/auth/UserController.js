@@ -280,5 +280,123 @@ export const verifyUser = asyncHandler(async (req, res) => {
 
 });
 
+export const forgotPassword = asyncHandler(async (req, res) => {
+
+    const { email } = req.body;
+
+    if(!email) {
+        return res.status(400).json({ message: 'Email not provided' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if(!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    let token = await Token.findOne({ userId: user._id});
+
+    if (token){
+        await Token.deleteOne();
+    }
+
+    const passwordResetToken = crypto.randomBytes(20).toString('hex') + user._id;
+
+    const hashedTokenValue = hashedToken(passwordResetToken);
+
+    await new Token({
+        userId: user._id,
+        passwordResetToken: hashedTokenValue,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 3600000,
+    }).save();
+
+    
+    const passwordResetLink = `${process.env.CLIENT_URL}/reset-password/${passwordResetToken}`;
+
+    const subject = 'Password Reset - Task Manager App';
+    const send_to = user.email;
+    const reply_to = 'noreply@taskmanagerapp.com';
+    const template = "PasswordResetTemplate";
+    const send_from = process.env.USER_EMAIL;
+    const name = user.name;
+    const link = passwordResetLink;
 
 
+    try {
+        await SendEmail(subject, send_to, reply_to, template, name, link, send_from);
+        return res.status(200).json({ message: 'Password reset email sent successfully' });
+        
+    } catch (error) {
+        console.log("Failed to send Password reset Email:" , error);
+        return res.status(500).json({ message: 'Failed to send password reset email' });
+    }
+
+
+});
+
+
+export const resetPassword = asyncHandler(async (req, res) => {
+
+    const { ResetPasswordToken } = req.params;
+    
+    const { password} = req.body;
+
+    if(!ResetPasswordToken){
+        return res.status(404).json({ message: 'Reset password token not found' });
+    }
+
+
+
+
+    const hashedTokenValue = hashedToken(ResetPasswordToken);
+
+    const userToken = await Token.findOne({ passwordResetToken: hashedTokenValue, expiresAt: {$gt : Date.now()}});
+
+    if(!userToken){
+        return res.status(404).json({ message: 'Invalid or expired reset password token' });
+    }
+
+    const user = await User.findById(userToken.userId);
+
+    if(!user){
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.password = password;
+    await user.save();
+
+    return res.status(200).json({ message: "Password reset successfully!" });
+
+});
+
+
+
+export const ChangePassword = asyncHandler(async (req, res) => {
+
+    const { CurrentPassword, NewPassword } = req.body;
+
+       
+    if(!CurrentPassword || !NewPassword){
+        return res.status(400).json({ message: 'Current or new password not provided' });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    const isMatch = await bcrypt.compare(CurrentPassword, user.password);
+
+    if(!isMatch){
+        return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    if (isMatch){
+        user.password = NewPassword;
+        await user.save();
+        return res.status(200).json({ message: "Password changed successfully!" });
+    } else {
+        return res.status(500).json({ message: 'Failed to change password' });
+    }
+
+
+
+});
