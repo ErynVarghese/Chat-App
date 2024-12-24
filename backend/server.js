@@ -4,6 +4,7 @@ import cors from "cors";
 import connect from "./src/db/connect.js";
 import cookieParser from "cookie-parser";
 import fs from "node:fs";
+import ErrorHandler from "./src/helpers/ErrorHandle.js";
 
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.use(ErrorHandler);
 
 
 //routes
