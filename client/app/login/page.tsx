@@ -1,8 +1,11 @@
 import React from 'react'
+import LoginForm from '../Components/auth/LoginForm/LoginForm';
 
 function page() {
   return (
-    <div className="login-page w-full h-full flex justify-center items-center">page</div>
+    <div className="login-page w-full h-full flex justify-center items-center">
+      <LoginForm />
+    </div>
   )
 }
 

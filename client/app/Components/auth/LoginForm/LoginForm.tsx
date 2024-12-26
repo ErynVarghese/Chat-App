@@ -4,8 +4,8 @@ import { useUserContext } from "@/context/UserContext";
 
 import React from "react";
 
-function RegisterForm() {
-   const { RegisterUser, userState, updateUserState } = useUserContext();
+function LoginForm() {
+   const { LoginUser, userState, updateUserState } = useUserContext();
 
    // Destructuring user state values
    const { name, email, password } = userState;
@@ -17,31 +17,19 @@ function RegisterForm() {
   return (
     <form className="flex flex-col gap-6 w-full max-w-lg mx-auto mt-10 p-8 bg-white border border-blue-300 rounded-md shadow-md">
       <h1 className="text-center text-2xl font-bold text-blue-700">
-        Create Your Account
+        Login to Task Manager App
       </h1>
       <div className="text-center text-sm text-blue-600">
-        Already have an account?{" "}
+         Dont have an account?{" "}
         <a
-          href="/login"
+          href="/register"
           className="font-bold text-blue-700 hover:underline"
         >
-          Login here
+          Register here
         </a>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="name" className="text-blue-600 font-medium">
-          Full Name
-        </label>
-        <input
-          type="text"
-          id="name"
-          value={name}
-          onChange={(e) => updateUserState("name")(e)}
-          placeholder="Eryn Renchi Varghese"
-          className="p-3 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-        />
-      </div>
+
 
       <div className="flex flex-col gap-2">
         <label htmlFor="email" className="text-blue-600 font-medium">
@@ -88,14 +76,14 @@ function RegisterForm() {
 
       <button
         type="submit"
-        onClick={RegisterUser}
-        disabled={!name || !email || !password}
+        onClick={LoginUser}
+        disabled={ !email || !password}
         className="w-full p-3 text-white font-bold bg-blue-600 rounded-md hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Register Now
+        Login Now
       </button>
     </form>
   );
 }
 
-export default RegisterForm;
+export default LoginForm;
