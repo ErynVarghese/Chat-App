@@ -20,7 +20,7 @@ export const UserContextProvider = ({children}) => {
     const router = useRouter();
 
     // logged-in user detals throughout a session 
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState({});
 
     // temporary for form fields (login or registration)
     const [userState, setUserState] = useState({
@@ -37,7 +37,7 @@ export const UserContextProvider = ({children}) => {
         e.preventDefault();
 
         // validation toast
-        if(!userState.email.includes("@") || !userState.password || !userState.password.length < 8){
+        if(!userState.email.includes("@") || !userState.password || userState.password.length < 8){
             toast.error("Please fill all fields");
             return;
         }
@@ -97,6 +97,49 @@ export const UserContextProvider = ({children}) => {
         }
     }
 
+    const userLoginStatus = async () => {
+        let LogIn = false;
+        try {
+            const res = await axios.get(`${serverUrl}/api/v1/login-status`, {
+                withCredentials: true,
+            });
+
+            LogIn = !!res.data
+            
+            setLoading(false);
+
+            if(!LogIn){
+                router.push("/login");
+            }
+
+        } catch (error) {
+            console.log("Error checking login status", error);
+            //setLoading(false);
+           // router.push("/login");            
+        }
+
+        console.log("Logged in?" , LogIn)
+        return LogIn;
+    }
+
+
+    const LogoutUser = async () => {
+        try {
+            const res = await axios.get(`${serverUrl}/api/v1/logout`, {
+                withCredentials: true,
+            });
+
+            toast.success("User logged out successfully!");
+
+            router.push("/login");
+        } catch (error){
+
+            console.log("Error logging out user", error);
+            toast.error(error.response.data.message);
+            router.push("/login");
+        } 
+    }
+
     // update the fields in UserState
     const updateUserState = (name) => (e) => {
         const value = e.target.value;
@@ -107,12 +150,17 @@ export const UserContextProvider = ({children}) => {
         }))
     }
 
+    useEffect(() => {
+        userLoginStatus();
+    }, []);
+
     return (
         <UserContext.Provider value= {{
             RegisterUser, 
             userState,
             updateUserState,
-            LoginUser, 	
+            LoginUser, 
+            LogoutUser,        	
         }}>
             {children}
         </UserContext.Provider>
