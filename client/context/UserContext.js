@@ -29,7 +29,7 @@ export const UserContextProvider = ({children}) => {
         password : "",
     })
 
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
 
     const RegisterUser = async (e) => {
@@ -88,7 +88,7 @@ export const UserContextProvider = ({children}) => {
                 
             });
 
-            router.push("/dashboard");
+            router.push("/");
 
             
         } catch (error) {
@@ -114,7 +114,7 @@ export const UserContextProvider = ({children}) => {
 
         } catch (error) {
             console.log("Error checking login status", error);
-            //setLoading(false);
+           // setLoading(false);
            // router.push("/login");            
         }
 
@@ -138,7 +138,82 @@ export const UserContextProvider = ({children}) => {
             toast.error(error.response.data.message);
             router.push("/login");
         } 
-    }
+    };
+
+    const GetUser = async () => {
+
+        setLoading(true);
+
+        try {
+            
+            const res = await axios.get(`${serverUrl}/api/v1/user`, {
+                withCredentials: true,
+            });
+
+            setUser((prevState) => {
+                return {
+                   ...prevState,
+                   ...res.data,
+                };
+            });
+
+            setLoading(false);
+
+        } catch (error) {
+            console.log("Ërror fetching user details", error);
+            setLoading(false);
+            toast.error(error.response.data.message);
+        }
+    };
+
+    const updateUser = async(e,data) =>{
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const res = await axios.patch(`${serverUrl}/api/v1/user`,data, {
+                withCredentials: true,
+            });
+
+            setUser((prevState) => ({
+                ...prevState,
+                ...res.data,
+            }));
+
+            toast.success("User details updated successfully!");
+
+            setLoading(false);
+
+        } catch (error) {
+            
+            console.log("Error updating user details", error);
+            setLoading(false);
+            toast.error(error.response.data.message);
+        }
+
+    };
+
+    const emailVerification = async () => {
+        console.log("Email verification triggered"); 
+        setLoading(true);
+        
+        try {
+            const res = await axios.post(`${serverUrl}/api/v1/verify-email`, {}, {
+                withCredentials: true, 
+            });
+
+        toast.success("Email verification successful!");
+        setLoading(false);
+            
+        } catch (error) {
+            console.log("Error in email verification", error);
+
+            setLoading(false);
+            toast.error(error.response.data.message);
+        }
+    };
+
+
 
     // update the fields in UserState
     const updateUserState = (name) => (e) => {
@@ -151,7 +226,19 @@ export const UserContextProvider = ({children}) => {
     }
 
     useEffect(() => {
-        userLoginStatus();
+
+        const GetuserLogin = async () => {
+            const isLogIn = await userLoginStatus();
+            console.log("Is logged in", isLogIn);
+
+            if(isLogIn){
+                await GetUser();
+            }
+        };
+
+        GetuserLogin();
+
+        
     }, []);
 
     return (
@@ -160,7 +247,11 @@ export const UserContextProvider = ({children}) => {
             userState,
             updateUserState,
             LoginUser, 
-            LogoutUser,        	
+            LogoutUser,
+            userLoginStatus,
+            user,
+            updateUser,
+            emailVerification,        	
         }}>
             {children}
         </UserContext.Provider>
