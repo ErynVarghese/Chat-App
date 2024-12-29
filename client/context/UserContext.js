@@ -261,6 +261,29 @@ export const UserContextProvider = ({children}) => {
         }
     }
 
+    const PasswordReset = async (token , password) => {
+
+        setLoading(true);
+
+        try {
+            
+            const res = await axios.post(`${serverUrl}/api/v1/reset-password/${token}`, {
+                password,
+            }, {
+                withCredentials: true,
+            });
+
+            toast.success("Password reset successful!");
+            router.push("/login");
+            setLoading(false);
+
+        } catch (error) {
+            
+            console.log("Error in password reset", error);
+            setLoading(false);
+            toast.error(error.response.data.message);
+        }
+    };
 
 
     // update the fields in UserState
@@ -301,7 +324,8 @@ export const UserContextProvider = ({children}) => {
             updateUser,
             emailVerification,
             verifyUser,
-            ForgotPassword,        	
+            ForgotPassword,
+            PasswordReset,        	
         }}>
             {children}
         </UserContext.Provider>

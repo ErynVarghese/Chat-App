@@ -9,7 +9,7 @@ export default function Home(){
 
   const {
     logoutUser,
-    user,
+    user, 
     handlerUserInput,
     userState,
     updateUser,
