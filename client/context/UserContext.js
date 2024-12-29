@@ -214,6 +214,31 @@ export const UserContextProvider = ({children}) => {
     };
 
 
+    const verifyUser = async (token) => {
+        setLoading(true);
+
+        try {
+            const res = await axios.post(`${serverUrl}/api/v1/verify-user/${token}` ,
+            {} , {
+                withCredentials: true,
+            }
+        );
+
+        toast.success("User verified successfully!");
+        GetUser();
+        setLoading(false);
+
+        router.push("/");
+        
+        } catch (error) {
+            console.log("Error verifying user", error);
+            setLoading(false);
+            toast.error(error.response.data.message);
+            
+        }
+    }
+
+
 
     // update the fields in UserState
     const updateUserState = (name) => (e) => {
@@ -251,7 +276,8 @@ export const UserContextProvider = ({children}) => {
             userLoginStatus,
             user,
             updateUser,
-            emailVerification,        	
+            emailVerification,
+            verifyUser,        	
         }}>
             {children}
         </UserContext.Provider>
