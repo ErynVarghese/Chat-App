@@ -11,7 +11,6 @@ const UserContext = React.createContext();
 
 axios.defaults.withCredentials = true; 
 
-
 export const UserContextProvider = ({children}) => {
 
     const serverUrl = "http://localhost:8000";
@@ -21,6 +20,8 @@ export const UserContextProvider = ({children}) => {
 
     // logged-in user detals throughout a session 
     const [user, setUser] = useState({});
+
+    const [allUsers, setAllUsers] = useState([]);
 
     // temporary for form fields (login or registration)
     const [userState, setUserState] = useState({
@@ -285,6 +286,44 @@ export const UserContextProvider = ({children}) => {
         }
     };
 
+    const changePassword = async (CurrentPassword, NewPassword) => {
+        setLoading(true);
+        
+        try {
+            
+            const res = await axios.patch(`${serverUrl}/api/v1/change-password`,{CurrentPassword, NewPassword} ,{withCredentials: true});
+            
+            toast.success("Password changed successfully!");
+            setLoading(false);
+
+        } catch (error) {
+            
+            console.log("Error in changing password", error);
+            setLoading(false);
+            toast.error(error.response.data.message);
+        }
+    };
+
+    const getAllUsers = async() => {
+        setLoading(true);
+
+        try {
+            
+            const res = await axios.get(`${serverUrl}/api/v1/admin/users`,{}, {
+                withCredentials: true,
+            });
+
+            setAllUsers(res.data);
+            setLoading(false);
+
+        } catch (error) {
+
+            console.log("Error in getting all users", error);
+            setLoading(false);
+            toast.error(error.response.data.message);
+        }
+
+    };
 
     // update the fields in UserState
     const updateUserState = (name) => (e) => {
@@ -308,9 +347,15 @@ export const UserContextProvider = ({children}) => {
         };
 
         GetuserLogin();
-
-        
+            
     }, []);
+
+    useEffect(() => {
+       
+        if (user.role == "admin"){
+            getAllUsers();
+        }
+    }, [user.role]);
 
     return (
         <UserContext.Provider value= {{
@@ -325,7 +370,9 @@ export const UserContextProvider = ({children}) => {
             emailVerification,
             verifyUser,
             ForgotPassword,
-            PasswordReset,        	
+            PasswordReset,
+            changePassword,
+            allUsers,        	
         }}>
             {children}
         </UserContext.Provider>

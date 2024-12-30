@@ -1,6 +1,7 @@
 "use client";
 
 import { useUserContext } from "@/context/UserContext";
+import ChangePasswordForm from "./Components/auth/ChangePasswordForm/ChangePasswordForm";
 
 // Home page 
 export default function Home(){
@@ -26,7 +27,16 @@ export default function Home(){
               Verify Account
              
             </button>
+
+            <ChangePasswordForm />
+
+            
+            
   </div>
+
+
+
+
   )
 }
 
