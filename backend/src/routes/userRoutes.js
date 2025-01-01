@@ -2,8 +2,12 @@ import express from 'express';
 import { ChangePassword, forgotPassword, loginUser, logoutUser, registerUser , resetPassword, updateUserProfile, userLoginStatus, UserProfile, verifyEmail, verifyUser} from '../controllers/auth/UserController.js';
 import { adminMiddleware, protect } from '../middleware/authMiddleware.js';
 import { deleteUser, getUsers } from '../controllers/auth/AdminController.js';
+import { getMessages, sendMessage } from '../controllers/MessageController.js';
+import { getUsersForSidebar } from '../controllers/ChatUserController.js';
 
 const router = express.Router();
+
+// Authentication route
 
 router.post("/register", registerUser);
 
@@ -32,6 +36,14 @@ router.post("/forgot-password",forgotPassword);
 router.post("/reset-password/:ResetPasswordToken",resetPassword);
 
 router.patch("/change-password", protect, ChangePassword);
+
+
+// Chat routes
+router.post("/messages/send/:id", protect, sendMessage);
+
+router.get("/messages/:id", protect, getMessages);
+
+router.get("/users", protect, getUsersForSidebar);
 
 export default router;
 

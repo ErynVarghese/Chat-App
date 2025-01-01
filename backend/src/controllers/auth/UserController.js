@@ -38,14 +38,14 @@ export const registerUser = asyncHandler(async (req, res) => {
     });
 
     // Generate JWT token
-    const token = generateToken(user._id);
+    const token = generateToken(user._id.toString());
 
     res.cookie("token", token, { 
         path: '/',
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 45, 
         sameSite: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
     });
 
     console.log (token);
@@ -82,6 +82,8 @@ export const loginUser = asyncHandler(async (req, res) => {
 
     const userExists = await User.findOne({ email });
 
+    console.log("USEREXISTS", userExists);
+
     if (!userExists) {
         return res.status(401).json({ message: 'User not found, please Register' });
     }
@@ -94,7 +96,7 @@ export const loginUser = asyncHandler(async (req, res) => {
         return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = generateToken(userExists._id);
+    const token = generateToken(userExists._id.toString());
 
     if (userExists && isMatch){
         const { _id, name, email, role, photo , bio , isVerified } = userExists;
@@ -105,7 +107,7 @@ export const loginUser = asyncHandler(async (req, res) => {
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 45, 
         sameSite: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
     });
 
     res.status(200).json({ message: 'User logged in successfully', 
@@ -212,7 +214,7 @@ export const verifyEmail= asyncHandler(async (req, res) => {
     let token = await Token.findOne({ userId: user._id});
 
     if (token){
-        await Token.deleteOne();
+        await Token.deleteOne({ userId: user._id });
     }
 
     const verificationToken = crypto.randomBytes(20).toString('hex') + user._id;
