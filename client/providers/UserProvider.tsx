@@ -14,4 +14,4 @@ function UserProvider({children} : Props) {
   </UserContextProvider>
 }
 
-export default UserContextProvider;
+export default UserProvider;

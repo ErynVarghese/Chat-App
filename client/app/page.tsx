@@ -2,42 +2,23 @@
 
 import { useUserContext } from "@/context/UserContext";
 import ChangePasswordForm from "./Components/auth/ChangePasswordForm/ChangePasswordForm";
+import Sidebar from "./Components/SideBar/SideBar";
+import ChatContainer from "./Components/Messages/ChatContainer";
+
 
 // Home page 
 export default function Home(){
 
-  
 
-  const {
-    logoutUser,
-    user, 
-    handlerUserInput,
-    userState,
-    updateUser,
-    emailVerification,
-  } = useUserContext();
+  return( 
 
-  return( <div>
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded-md"
-              
-              onClick={emailVerification}
-             
-            >
-              Verify Account
-             
-            </button>
-
-            <ChangePasswordForm />
-
-            
-            
+    <div className='flex sm:h-[450px] md:h-[550px] rounded-lg overflow-hidden bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-lg bg-opacity-0'>
+    <Sidebar />
+    <ChatContainer />
   </div>
 
 
+  );
+};
 
 
-  )
-}
-
-// use the userredirect hook in main page

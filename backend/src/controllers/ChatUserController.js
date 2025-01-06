@@ -6,7 +6,7 @@ export const getUsersForSidebar = async(req,res) => {
 
         const loggedInUser = req.user._id;
 
-        const allUsers = await User.find( {id: {$ne: loggedInUser} }).select("-password");
+        const ChatUsers = await User.find( {id: {$ne: loggedInUser} }).select("-password");
 
         res.status(200).json(allUsers);
         
