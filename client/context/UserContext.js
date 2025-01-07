@@ -330,6 +330,57 @@ export const UserContextProvider = ({children}) => {
 
    
     const [conversations, setConversations] = useState([]);
+
+
+   // Function to get messages
+  const getMessages = async () => {
+    if (!selectedConversation?._id) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/messages/${selectedConversation._id}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setMessages(data); 
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
+  useEffect(() => {
+    getMessages();
+  }, [selectedConversation]);
+
+
+     // sendMessage function
+  const sendMessage = async (message) => {
+    if (!selectedConversation) {
+      toast.error("No conversation selected");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/messages/send/${selectedConversation._id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+     
+      setMessages((prevMessages) => [...prevMessages, data]);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
    
   
     // Fetch conversations on component mount
@@ -345,7 +396,7 @@ export const UserContextProvider = ({children}) => {
           }
           setConversations(data);
         } catch (error) {
-          toast.error(error.message);
+            console.log(error.message);
         } finally {
           setLoading(false);
         }
@@ -406,8 +457,10 @@ export const UserContextProvider = ({children}) => {
             messages,
             setMessages,
             conversations,
-            setConversations,            
-            allUsers,        	
+            setConversations,
+            sendMessage,            
+            allUsers,
+            getMessages,        	
         }}>
             {children}
         </UserContext.Provider>

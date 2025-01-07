@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
-import MessageInput from "./MessageInput";
-import Messages from "./Messages";
+import MessageInput from "./MessageInput.jsx";
+import Messages from "./Messages.jsx";
 import { TiMessages } from "react-icons/ti";
 import { useUserContext } from "@/context/UserContext.js";
 
