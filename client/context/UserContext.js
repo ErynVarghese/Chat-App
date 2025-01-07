@@ -325,6 +325,35 @@ export const UserContextProvider = ({children}) => {
 
     };
 
+    const [selectedConversation, setSelectedConversation] = useState(null);
+    const [messages, setMessages] = useState([]);
+
+   
+    const [conversations, setConversations] = useState([]);
+   
+  
+    // Fetch conversations on component mount
+    useEffect(() => {
+      const getConversations = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch("http://localhost:8000/api/v1/users");
+          const data = await res.json();
+          console.log("Data", data);
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          setConversations(data);
+        } catch (error) {
+          toast.error(error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      getConversations();
+    }, []);
+
     // update the fields in UserState
     const updateUserState = (name) => (e) => {
         const value = e.target.value;
@@ -372,6 +401,12 @@ export const UserContextProvider = ({children}) => {
             ForgotPassword,
             PasswordReset,
             changePassword,
+            selectedConversation,
+            setSelectedConversation,
+            messages,
+            setMessages,
+            conversations,
+            setConversations,            
             allUsers,        	
         }}>
             {children}

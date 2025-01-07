@@ -3,12 +3,14 @@ import { useState, useEffect } from "react";
 import MessageInput from "./MessageInput";
 import Messages from "./Messages";
 import { TiMessages } from "react-icons/ti";
-import { useUserContext } from "@/context/UserContext";
-import useConversation from "../../../hooks/useConversation";
+import { useUserContext } from "@/context/UserContext.js";
+
 
 const MessageContainer = () => {
   const { user } = useUserContext();
-  const { selectedConversation, setSelectedConversation } = useConversation();
+  const { selectedConversation, setSelectedConversation } = useUserContext();
+
+  console.log("1", selectedConversation);
 
   useEffect(() => {
     return () => setSelectedConversation(null);
@@ -16,6 +18,7 @@ const MessageContainer = () => {
 
   return (
     <div className="md:min-w-[450px] flex flex-col bg-gray-900 text-white rounded-lg shadow-lg">
+
       {!selectedConversation ? (
         <NoChatSelected />
       ) : (

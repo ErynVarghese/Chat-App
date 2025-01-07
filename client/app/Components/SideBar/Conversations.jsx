@@ -1,10 +1,10 @@
 import Conversation from "./Conversation.jsx";
-import useGetConversations from "../../../hooks/useGetConversation.js"
+import { useUserContext } from "@/context/UserContext.js";
 
 
 
 const Conversations = () => {
-	const { loading, conversations } = useGetConversations();
+	const { loading, conversations } = useUserContext();
 	return (
 		<div className='py-2 flex flex-col overflow-auto'>
 			{conversations.map((conversation, idx) => (

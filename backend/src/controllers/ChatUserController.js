@@ -8,7 +8,7 @@ export const getUsersForSidebar = async(req,res) => {
 
         const ChatUsers = await User.find( {id: {$ne: loggedInUser} }).select("-password");
 
-        res.status(200).json(allUsers);
+        res.status(200).json(ChatUsers);
         
     } catch (error) {
 

@@ -1,11 +1,14 @@
-import useConversation from "@/hooks/useConversation";
+import { useUserContext } from "@/context/UserContext.js";
+
+
 
 const Conversation = ({ conversation, lastIdx, emoji }) => {
-	const { selectedConversation, setSelectedConversation } = useConversation();
+	const { selectedConversation, setSelectedConversation } = useUserContext();
 
 	const isSelected = selectedConversation?._id === conversation._id;
-	const { onlineUsers } = useSocketContext();
-	const isOnline = onlineUsers.includes(conversation._id);
+	console.log(isSelected);
+	//const { onlineUsers } = useSocketContext();
+	//const isOnline = onlineUsers.includes(conversation._id);
 
 	return (
 		<>
@@ -15,16 +18,11 @@ const Conversation = ({ conversation, lastIdx, emoji }) => {
 			`}
 				onClick={() => setSelectedConversation(conversation)}
 			>
-				<div className={`avatar ${isOnline ? "online" : ""}`}>
-					<div className='w-12 rounded-full'>
-						<img src={conversation.profilePic} alt='user avatar' />
-					</div>
-				</div>
+
 
 				<div className='flex flex-col flex-1'>
 					<div className='flex gap-3 justify-between'>
-						<p className='font-bold text-gray-200'>{conversation.fullName}</p>
-						<span className='text-xl'>{emoji}</span>
+						<p className='font-bold text-black-200'>{conversation.name}</p>			
 					</div>
 				</div>
 			</div>
