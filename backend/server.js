@@ -5,13 +5,15 @@ import connect from "./src/db/connect.js";
 import cookieParser from "cookie-parser";
 import fs from "node:fs";
 import ErrorHandler from "./src/helpers/ErrorHandle.js";
+import { app, server } from "./socket/socket.js";
+import mongoose from "mongoose";
 
 
 dotenv.config();
 
 const port = process.env.PORT || 8000;
 
-const app = express();
+//const app = express();
 
 // middleware
 app.use(
@@ -41,17 +43,22 @@ routeFiles.forEach((file) => {
     });
 });
 
-const server = async () => {
-  try {
-    await connect();
+// const server = async () => {
+//   try {
+//     await connect();
 
-    app.listen(port, () => {
-      console.log(`Server is on the port ${port}`);
-    });
-  } catch (error) {
-    console.log("Failed to start server", error.message);
-    process.exit(1);
-  }
-};
+//     app.listen(port, () => {
+//       console.log(`Server is on the port ${port}`);
+//     });
+//   } catch (error) {
+//     console.log("Failed to start server", error.message);
+//     process.exit(1);
+//   }
+// };
 
-server();
+
+
+server.listen(port, () => {
+	connect();
+	console.log(`Server Running on port ${port}`);
+});

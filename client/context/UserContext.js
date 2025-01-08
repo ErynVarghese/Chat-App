@@ -1,4 +1,5 @@
 import React, {createContext, useEffect, useState, useContext} from 'react';
+import { io } from "socket.io-client";
 
 import axios from 'axios';
 
@@ -313,9 +314,10 @@ export const UserContextProvider = ({children}) => {
                 withCredentials: true,
             });
 
-            setAllUsers(res.data);
-            setLoading(false);
 
+            const data = await res.json();
+            console.log("Data", data);  
+            
         } catch (error) {
 
             console.log("Error in getting all users", error);
@@ -352,6 +354,34 @@ export const UserContextProvider = ({children}) => {
   useEffect(() => {
     getMessages();
   }, [selectedConversation]);
+
+  const [socket, setSocket] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
+  useEffect(() => {
+    if (user) {
+        const socket = io("http://localhost:3000", {
+            query: {
+                userId: user._id,
+            },
+        });
+
+        setSocket(socket);
+
+        
+        socket.on("getOnlineUsers", (users) => {
+            setOnlineUsers(users);
+        });
+
+        return () => socket.close();
+    } else {
+        if (socket) {
+            socket.close();
+            setSocket(null);
+        }
+    }
+}, [user]);
+
 
 
      // sendMessage function
@@ -460,7 +490,9 @@ export const UserContextProvider = ({children}) => {
             setConversations,
             sendMessage,            
             allUsers,
-            getMessages,        	
+            getMessages,
+            socket,
+            onlineUsers,        	
         }}>
             {children}
         </UserContext.Provider>

@@ -1,3 +1,4 @@
+import { getReceiverSocketId } from "../../socket/socket.js";
 import GroupChat from "../models/Chat/GroupChat.js";
 import Message from "../models/Chat/MessageModel.js";
 import asyncHandler from "express-async-handler"; 
@@ -58,7 +59,13 @@ export const sendMessage = asyncHandler(async (req, res) => {
 
         // socket function
 
- 
+        const receiverSocketId = getReceiverSocketId(receiverId);
+		if (receiverSocketId) {
+			
+			io.to(receiverSocketId).emit("newMessage", newMessage);
+		}
+
+		res.status(201).json(newMessage);
 
         await Promise.all([conversation.save(), newMessage.save()]);
 

@@ -3,8 +3,12 @@ import { useUserContext } from "@/context/UserContext.js";
 
 
 
-const Conversations = () => {
+const Conversations = () => { 
 	const { loading, conversations } = useUserContext();
+
+	console.log("User Context:", { loading, conversations });
+
+
 	return (
 		<div className='py-2 flex flex-col overflow-auto'>
 			{conversations.map((conversation, idx) => (

@@ -7,10 +7,10 @@ import { jwtVerify } from 'jose';
 
 export const protect = asyncHandler(async (req, res, next) => {
     try {
-        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NzMxZGJlNDk5NzNkNzY3NDk3MWY1NCIsImlhdCI6MTczNTU5NzUwMiwiZXhwIjoxNzM5NDg1NTAyfQ.aYuBvyIR2hhLMQihnk6BNhyG61QJC4LofZLtKRb_8fw';
+        const token = req.cookies.token;
 
         if (!token) {
-            res.status(401).json({ message: "Not authorized, Login again" });
+           return res.status(401).json({ message: "Not authorized, Login again" });
         }
 
         console.log("Token", token);
@@ -41,7 +41,7 @@ export const protect = asyncHandler(async (req, res, next) => {
 
 
     } catch (error) {
-        res.status(401).json({ message: "Not authorized, Login again" });
+        return res.status(401).json({ message: "Not authorized, Login again" });
     }
 });
 
