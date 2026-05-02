@@ -29,7 +29,12 @@ function LoginForm() {
         </a>
       </div>
 
-
+      <div className="flex items-center justify-between text-sm text-blue-600">
+        <span>Forgot your password?</span>
+        <a href="/forgot-password" className="font-bold text-blue-700 hover:underline">
+          Reset here
+        </a>
+      </div>
 
       <div className="flex flex-col gap-2">
         <label htmlFor="email" className="text-blue-600 font-medium">

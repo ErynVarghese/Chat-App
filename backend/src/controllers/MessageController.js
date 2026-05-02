@@ -11,65 +11,50 @@ export const sendMessage = asyncHandler(async (req, res) => {
           
         console.log("user prob", req.user);
         
-        const { message} = req.body;
-        const {id: receiverId} = req.params;
+        const { message } = req.body;
+        const { id: receiverId } = req.params;
 
         console.log(req.user);
-        
-        const senderId = req.user.id;
 
-        console.log("Sender ID:", senderId); 
-      
+        const senderId = req.user._id;
+
+        console.log("Sender ID:", senderId);
         console.log("Receiver ID:", receiverId);
-
-
-        let conversation = await GroupChat.findOne({
-            participants: {
-                $all : [senderId , receiverId]
-            }
-        })
 
         if (!senderId || !receiverId) {
             return res.status(400).json({ message: "Sender ID or Receiver ID is missing." });
         }
 
-        if (!conversation){
+        let conversation = await GroupChat.findOne({
+            participants: {
+                $all: [senderId, receiverId],
+            },
+        });
+
+        if (!conversation) {
             conversation = await GroupChat.create({
                 participants: [senderId, receiverId],
-              
             });
         }
 
         const newMessage = new Message({
+            senderId: senderId,
+            receiverId: receiverId,
+            message: message,
+        });
 
-            senderId : senderId,
-            receiverId : receiverId,
-         
-            message : message,
-         
-        })
-
-        console.log("Receiver ID2:", receiverId);
-
-        console.log("New message",newMessage);
-
-        if (newMessage){
+        if (newMessage) {
             conversation.messages.push(newMessage._id);
         }
 
-        // socket function
-
-        const receiverSocketId = getReceiverSocketId(receiverId);
-		if (receiverSocketId) {
-			
-			io.to(receiverSocketId).emit("newMessage", newMessage);
-		}
-
-		res.status(201).json(newMessage);
-
         await Promise.all([conversation.save(), newMessage.save()]);
 
-        res.status(200).json(newMessage); 
+        const receiverSocketId = getReceiverSocketId(receiverId);
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("newMessage", newMessage);
+        }
+
+        res.status(201).json(newMessage); 
 
 
     } catch (error) {

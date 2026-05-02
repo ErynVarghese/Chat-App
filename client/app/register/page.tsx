@@ -3,8 +3,8 @@ import RegisterForm from '../Components/auth/RegisterForm/RegisterForm';
 
 function page() {
   return (
-    <div className="login-page w-full h-full flex justify-center items-center">
-        <RegisterForm />
+    <div className="login-page min-h-screen w-full flex items-center justify-center px-4 py-10">
+      <RegisterForm />
     </div>
   )
 }

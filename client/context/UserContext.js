@@ -309,22 +309,19 @@ export const UserContextProvider = ({children}) => {
         setLoading(true);
 
         try {
-            
-            const res = await axios.get(`${serverUrl}/api/v1/admin/users`,{}, {
+            const res = await axios.get(`${serverUrl}/api/v1/admin/users`, {
                 withCredentials: true,
             });
 
-
-            const data = await res.json();
-            console.log("Data", data);  
-            
+            setAllUsers(res.data);
+            console.log("Admin users", res.data);
         } catch (error) {
-
             console.log("Error in getting all users", error);
             setLoading(false);
-            toast.error(error.response.data.message);
+            toast.error(error.response?.data?.message || error.message);
+        } finally {
+            setLoading(false);
         }
-
     };
 
     const [selectedConversation, setSelectedConversation] = useState(null);
@@ -339,10 +336,12 @@ export const UserContextProvider = ({children}) => {
     if (!selectedConversation?._id) return;
     setLoading(true);
     try {
-      const res = await fetch(`${serverUrl}/api/v1/messages/${selectedConversation._id}`);
+      const res = await fetch(`${serverUrl}/api/v1/messages/${selectedConversation._id}`, {
+        credentials: "include",
+      });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      setMessages(data); 
+      setMessages(data);
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -359,28 +358,24 @@ export const UserContextProvider = ({children}) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
-    if (user) {
-        const socket = io("http://localhost:3000", {
-            query: {
-                userId: user._id,
-            },
-        });
-
-        setSocket(socket);
-
-        
-        socket.on("getOnlineUsers", (users) => {
-            setOnlineUsers(users);
-        });
-
-        return () => socket.close();
-    } else {
-        if (socket) {
-            socket.close();
-            setSocket(null);
-        }
+    if (!user?._id) {
+      return;
     }
-}, [user]);
+
+    const socketClient = io(serverUrl, {
+      query: {
+        userId: user._id,
+      },
+    });
+
+    setSocket(socketClient);
+
+    socketClient.on("getOnlineUsers", (users) => {
+      setOnlineUsers(users);
+    });
+
+    return () => socketClient.close();
+  }, [user?._id]);
 
 
 
@@ -393,17 +388,17 @@ export const UserContextProvider = ({children}) => {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/messages/send/${selectedConversation._id}`, {
+      const res = await fetch(`${serverUrl}/api/v1/messages/send/${selectedConversation._id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ message }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-     
       setMessages((prevMessages) => [...prevMessages, data]);
     } catch (error) {
       toast.error(error.message);
@@ -418,13 +413,15 @@ export const UserContextProvider = ({children}) => {
       const getConversations = async () => {
         setLoading(true);
         try {
-          const res = await fetch("http://localhost:8000/api/v1/users");
+          const res = await fetch(`${serverUrl}/api/v1/users`, {
+            credentials: "include",
+          });
           const data = await res.json();
           console.log("Data", data);
           if (data.error) {
             throw new Error(data.error);
           }
-          setConversations(data);
+          setConversations(Array.isArray(data) ? data : data.conversations || []);
         } catch (error) {
             console.log(error.message);
         } finally {

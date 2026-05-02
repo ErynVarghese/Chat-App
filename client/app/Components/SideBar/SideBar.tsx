@@ -5,13 +5,14 @@ import LogoutButton from './LogoutButton';
 
 const Sidebar: React.FC = () => {
   return (
-    <div className='border-r border-slate-500 p-4 flex flex-col'>
+    <aside className='flex h-full w-full max-w-xs flex-col border-r border-slate-700 bg-slate-950 p-4'>
       <SearchInput />
-      <div className='divider px-3'></div>
-      <Conversations />
-
+      <div className='divider px-3' />
+      <div className='flex-1 overflow-auto'>
+        <Conversations />
+      </div>
       <LogoutButton />
-    </div>
+    </aside>
   );
 };
 

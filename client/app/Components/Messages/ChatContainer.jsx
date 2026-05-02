@@ -17,23 +17,22 @@ const MessageContainer = () => {
   }, []);
 
   return (
-    <div className="md:min-w-[450px] flex flex-col bg-gray-900 text-white rounded-lg shadow-lg">
-
+    <section className="flex min-h-full flex-1 flex-col bg-slate-900 text-white rounded-r-3xl p-4 shadow-lg md:min-w-[0]">
       {!selectedConversation ? (
         <NoChatSelected />
       ) : (
         <>
-          <div className="bg-slate-500 px-4 py-2 mb-2 rounded-t-lg">
-            <span className="label-text">To:</span>
-            <span className="text-gray-900 font-bold">
-              {selectedConversation ? selectedConversation.name : "Loading..."}
-            </span>
+          <div className="mb-2 rounded-t-2xl bg-slate-800 px-4 py-3 text-white shadow-sm">
+            <span className="block text-sm text-slate-400">Chatting with</span>
+            <span className="text-xl font-semibold">{selectedConversation.name}</span>
           </div>
-          <Messages />
+          <div className="flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+            <Messages />
+          </div>
           <MessageInput />
         </>
       )}
-    </div>
+    </section>
   );
 };
 
