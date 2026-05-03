@@ -183,15 +183,19 @@ export const userLoginStatus = asyncHandler(async (req, res) => {
     const token = req.cookies.token;
 
     if (!token){
-        res.status(401).json({ message: 'User not logged in' });
+        return res.status(401).json({ message: 'User not logged in' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (decoded){
-        res.status(200).json(true);
-    } else {
-        res.status(401).json(false);
+        if (decoded){
+            res.status(200).json(true);
+        } else {
+            res.status(401).json(false);
+        }
+    } catch (error) {
+        return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
 
@@ -300,7 +304,8 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     let token = await Token.findOne({ userId: user._id});
 
     if (token){
-        await Token.deleteOne();
+        // await Token.deleteOne();
+        await Token.deleteOne({ userId: user._id });
     }
 
     const passwordResetToken = crypto.randomBytes(20).toString('hex') + user._id;
@@ -332,6 +337,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
         
     } catch (error) {
         console.log("Failed to send Password reset Email:" , error);
+        console.error("SendGrid error:", JSON.stringify(error.response?.body, null, 2));
         return res.status(500).json({ message: 'Failed to send password reset email' });
     }
 

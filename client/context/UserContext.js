@@ -1,4 +1,4 @@
-import React, {createContext, useEffect, useState, useContext} from 'react';
+import React, {createContext, useEffect, useRef, useState, useContext} from 'react';
 import { io } from "socket.io-client";
 
 import axios from 'axios';
@@ -340,10 +340,14 @@ export const UserContextProvider = ({children}) => {
         credentials: "include",
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to load messages");
+      }
       setMessages(data);
     } catch (error) {
-      toast.error(error.message);
+      if (error.message !== "Failed to fetch") {
+        toast.error(error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -356,6 +360,11 @@ export const UserContextProvider = ({children}) => {
 
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const selectedConversationRef = useRef(null);
+
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
 
   useEffect(() => {
     if (!user?._id) {
@@ -372,6 +381,13 @@ export const UserContextProvider = ({children}) => {
 
     socketClient.on("getOnlineUsers", (users) => {
       setOnlineUsers(users);
+    });
+
+    socketClient.on("newMessage", (newMessage) => {
+      const activeChatId = selectedConversationRef.current?._id;
+      if (activeChatId && newMessage.senderId === activeChatId) {
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      }
     });
 
     return () => socketClient.close();

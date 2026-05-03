@@ -5,15 +5,9 @@ import Message from "./Message.jsx";
 import { useUserContext } from "@/context/UserContext.js";
 
 const Messages = () => {
-    const { messages, loading, getMessages, selectedConversation } = useUserContext();
+    const { messages, loading } = useUserContext();
  
   const lastMessageRef = useRef();
-
-  useEffect(() => {
-    if (selectedConversation) {
-      getMessages(); 
-    }
-  }, [selectedConversation, getMessages]);
 
   useEffect(() => {
     setTimeout(() => {

@@ -1,4 +1,4 @@
-import { getReceiverSocketId } from "../../socket/socket.js";
+import { getReceiverSocketId, io } from "../../socket/socket.js";
 import GroupChat from "../models/Chat/GroupChat.js";
 import Message from "../models/Chat/MessageModel.js";
 import asyncHandler from "express-async-handler"; 
@@ -78,7 +78,10 @@ export const getMessages = async (req, res) => {
             participants: {
                 $all: [senderId, userToChatId]
             },
-        }).populate("messages");
+        }).populate({
+            path: "messages",
+            options: { sort: { createdAt: 1 } },
+        });
 
         if(!conversation){
             return res.status(200).json([]); 

@@ -6,36 +6,49 @@ const Message = ({ message }) => {
 
   const fromMe = message.senderId === user._id;
   const formattedTime = extractTime(message.createdAt);
-  const chatClassName = fromMe ? "chat-end" : "chat-start";
+  const otherName = selectedConversation?.name || "User";
+  const initials = otherName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   const profilePic = fromMe ? user.photo : selectedConversation?.photo;
-  const bubbleBgColor = fromMe ? "bg-blue-500" : "bg-gray-300";
+  const hasProfileImage = profilePic && profilePic.trim() !== "";
+
+  const bubbleClasses = fromMe
+    ? "bg-blue-500 text-white rounded-3xl rounded-br-none"
+    : "bg-slate-700 text-slate-100 rounded-3xl rounded-bl-none";
 
   return (
-    <div className={`chat ${chatClassName} flex items-start gap-3 mb-2`}>
-     
+    <div className={`flex ${fromMe ? "justify-end" : "justify-start"} px-3 py-1`}>
       {!fromMe && (
-        <div className="chat-image avatar">
-          <div className="w-10 rounded-full">
-            <img alt="User Profile" src={profilePic} />
-          </div>
+        <div className="mr-2 mt-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white">
+          {hasProfileImage ? (
+            <img className="h-10 w-10 rounded-full object-cover" src={profilePic} alt="Avatar" />
+          ) : (
+            <span>{initials}</span>
+          )}
         </div>
       )}
 
- 
-      <div className={`chat-bubble text-white ${bubbleBgColor} p-3 rounded-lg`}>
-        {message.message}
+      <div className="max-w-[80%]">
+        <div className={`${bubbleClasses} p-4 shadow-lg`}>
+          <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.message}</p>
+        </div>
+        <div className={`mt-1 text-[11px] ${fromMe ? "text-right text-slate-300" : "text-left text-slate-400"}`}>
+          {formattedTime}
+        </div>
       </div>
 
-      <div className="chat-footer opacity-50 text-xs flex gap-1 items-center justify-end">
-        {formattedTime}
-      </div>
-
-    
       {fromMe && (
-        <div className="chat-image avatar ml-auto">
-          <div className="w-10 rounded-full">
-            <img alt="User Profile" src={profilePic} />
-          </div>
+        <div className="ml-2 mt-auto flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+          {hasProfileImage ? (
+            <img className="h-10 w-10 rounded-full object-cover" src={profilePic} alt="Avatar" />
+          ) : (
+            <span>{(user.name || "Me").slice(0, 2).toUpperCase()}</span>
+          )}
         </div>
       )}
     </div>
