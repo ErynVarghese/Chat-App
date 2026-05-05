@@ -3,7 +3,7 @@ import { ChangePassword, forgotPassword, loginUser, logoutUser, registerUser , r
 import { adminMiddleware, protect } from '../middleware/authMiddleware.js';
 import { deleteUser, getUsers } from '../controllers/auth/AdminController.js';
 import { getMessages, sendMessage } from '../controllers/MessageController.js';
-import { getUsersForSidebar } from '../controllers/ChatUserController.js';
+import { getUsersForSidebar, searchUsers, getConversations, createDirectConversation, createGroupConversation } from '../controllers/ChatUserController.js';
 
 const router = express.Router();
 
@@ -44,6 +44,14 @@ router.post("/messages/send/:id", protect, sendMessage);
 router.get("/messages/:id", protect, getMessages);
 
 router.get("/users", protect, getUsersForSidebar);
+
+router.get("/users/search", protect, searchUsers);
+
+router.get("/conversations", protect, getConversations);
+
+router.post("/conversations/direct", protect, createDirectConversation);
+
+router.post("/conversations/group", protect, createGroupConversation);
 
 export default router;
 

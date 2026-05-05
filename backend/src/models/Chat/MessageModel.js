@@ -13,11 +13,21 @@ const messageSchema = new mongoose.Schema({
         required: true,
     },
 
+    conversationId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'GroupChat',
+        required: true,
+    },
+
     message: {
         type: String,
         required: true,
         maxLength: 500,
-    }
+    },
+    isRead: {
+        type: Boolean,
+        default: false,
+    },
 } , {timestamps: true});
 
 const Message = mongoose.model("Message", messageSchema);

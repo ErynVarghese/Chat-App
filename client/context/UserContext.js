@@ -347,10 +347,10 @@ export const UserContextProvider = ({children}) => {
 
    // Function to get messages
   const getMessages = async () => {
-    if (!selectedConversation?._id) return;
+    if (!selectedConversation?.conversationId) return;
     setLoading(true);
     try {
-      const res = await fetch(`${serverUrl}/api/v1/messages/${selectedConversation._id}`, {
+      const res = await fetch(`${serverUrl}/api/v1/messages/${selectedConversation.conversationId}`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -369,11 +369,13 @@ export const UserContextProvider = ({children}) => {
 
   
   useEffect(() => {
+    setMessages([]);
     getMessages();
   }, [selectedConversation]);
 
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingUsers, setTypingUsers] = useState({});
   const selectedConversationRef = useRef(null);
 
   useEffect(() => {
@@ -397,10 +399,29 @@ export const UserContextProvider = ({children}) => {
       setOnlineUsers(users);
     });
 
+    socketClient.on("typing", ({ senderId, isTyping }) => {
+      setTypingUsers((prev) => ({ ...prev, [senderId]: isTyping }));
+    });
+
+    socketClient.on("messageRead", ({ readerId, conversationId }) => {
+      if (selectedConversationRef.current?.conversationId === conversationId) {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.senderId === user._id ? { ...msg, isRead: true } : msg
+          )
+        );
+      }
+    });
+
     socketClient.on("newMessage", (newMessage) => {
-      const activeChatId = selectedConversationRef.current?._id;
-      if (activeChatId && newMessage.senderId === activeChatId) {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      const currentSelected = selectedConversationRef.current;
+      if (currentSelected) {
+        if (currentSelected.conversationId && newMessage.conversationId === currentSelected.conversationId) {
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
+        } else if (!currentSelected.conversationId && currentSelected.otherParticipant?._id === newMessage.senderId) {
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
+          setSelectedConversation(prev => ({ ...prev, conversationId: newMessage.conversationId }));
+        }
       }
     });
 
@@ -418,7 +439,8 @@ export const UserContextProvider = ({children}) => {
 
     setLoading(true);
     try {
-      const res = await fetch(`${serverUrl}/api/v1/messages/send/${selectedConversation._id}`, {
+      const id = selectedConversation.conversationId || selectedConversation.otherParticipant._id;
+      const res = await fetch(`${serverUrl}/api/v1/messages/send/${id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -429,6 +451,13 @@ export const UserContextProvider = ({children}) => {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
+      // Update selectedConversation with conversationId if not set
+      if (!selectedConversation.conversationId && data.conversationId) {
+        setSelectedConversation(prev => ({ ...prev, conversationId: data.conversationId }));
+        // Refetch conversations to include the new one
+        fetchConversations();
+      }
+
       setMessages((prevMessages) => [...prevMessages, data]);
     } catch (error) {
       toast.error(error.message);
@@ -436,33 +465,28 @@ export const UserContextProvider = ({children}) => {
       setLoading(false);
     }
   };
+
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/conversations`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      setConversations(data);
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
    
   
-    // Fetch conversations on component mount
-    useEffect(() => {
-        if (!user?._id) return;
-        
-      const getConversations = async () => {
-        setLoading(true);
-        try {
-          const res = await fetch(`${serverUrl}/api/v1/users`, {
-            credentials: "include",
-          });
-          const data = await res.json();
-          console.log("Data", data);
-          if (data.error) {
-            throw new Error(data.error);
-          }
-          setConversations(Array.isArray(data) ? data : data.conversations || []);
-        } catch (error) {
-            console.log(error.message);
-        } finally {
-          setLoading(false);
-        }
-      };
-  
-      getConversations();
-    }, [user?._id]);
+  useEffect(() => {
+    if (!user?._id) return;
+    
+    fetchConversations();
+  }, [user?._id]);
 
     // update the fields in UserState
     const updateUserState = (name) => (e) => {
@@ -471,7 +495,7 @@ export const UserContextProvider = ({children}) => {
         setUserState((prevState) => ({
             ...prevState,
             [name]: value,
-        }))
+        }));
     }
 
     useEffect(() => {
@@ -517,11 +541,13 @@ export const UserContextProvider = ({children}) => {
             setMessages,
             conversations,
             setConversations,
+            fetchConversations,
             sendMessage,
             allUsers,
             getMessages,
             socket,
             onlineUsers,
+            typingUsers,
             searchQuery,
             setSearchQuery,
         }}>

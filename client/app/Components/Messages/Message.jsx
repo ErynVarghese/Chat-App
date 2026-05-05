@@ -6,7 +6,7 @@ const Message = ({ message }) => {
 
   const fromMe = message.senderId === user._id;
   const formattedTime = extractTime(message.createdAt);
-  const otherName = selectedConversation?.name || "User";
+  const otherName = selectedConversation?.otherParticipant?.name || "User";
   const initials = otherName
     .split(" ")
     .map((part) => part[0])
@@ -14,12 +14,12 @@ const Message = ({ message }) => {
     .slice(0, 2)
     .toUpperCase();
 
-  const profilePic = fromMe ? user.photo : selectedConversation?.photo;
+  const profilePic = fromMe ? user.photo : selectedConversation?.otherParticipant?.photo;
   const myProfilePic = user?.photo;
-  const otherProfilePic = selectedConversation?.photo;
+  const otherProfilePic = selectedConversation?.otherParticipant?.photo;
 
   const getAvatarSeed = (item) => item?.email || item?.name || "User";
-  const otherAvatarSeed = getAvatarSeed(selectedConversation);
+  const otherAvatarSeed = getAvatarSeed(selectedConversation?.otherParticipant);
   const myAvatarSeed = getAvatarSeed(user);
 
   const bubbleClasses = fromMe
@@ -36,7 +36,7 @@ const Message = ({ message }) => {
               otherProfilePic ||
               `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(otherAvatarSeed)}`
             }
-            alt={`${selectedConversation?.name || "User"} avatar`}
+            alt={`${selectedConversation?.otherParticipant?.name || "User"} avatar`}
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(otherAvatarSeed)}`;
@@ -50,7 +50,12 @@ const Message = ({ message }) => {
           <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.message}</p>
         </div>
         <div className={`mt-1 text-[11px] ${fromMe ? "text-right text-slate-300" : "text-left text-slate-400"}`}>
-          {formattedTime}
+          <span>{formattedTime}</span>
+          {fromMe && (
+            <span className="ml-2 text-[10px] font-semibold text-slate-400">
+              {message.isRead ? "Read" : "Sent"}
+            </span>
+          )}
         </div>
       </div>
 

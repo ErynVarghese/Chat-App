@@ -8,7 +8,9 @@ import { useUserContext } from "@/context/UserContext.js";
 
 const MessageContainer = () => {
   const { user } = useUserContext();
-  const { selectedConversation, setSelectedConversation } = useUserContext();
+  const { selectedConversation, setSelectedConversation, typingUsers } = useUserContext();
+
+  const isTyping = selectedConversation && typingUsers[selectedConversation.conversationId || selectedConversation.otherParticipant?._id];
 
   console.log("1", selectedConversation);
 
@@ -24,11 +26,30 @@ const MessageContainer = () => {
         <>
           <div className="mb-2 rounded-t-2xl bg-slate-800 px-4 py-3 text-white shadow-sm">
             <span className="block text-sm text-slate-400">Chatting with</span>
-            <span className="text-xl font-semibold">{selectedConversation.name}</span>
+
+            <span className="text-xl font-semibold">
+              {selectedConversation.isGroup
+                ? selectedConversation.groupName
+                : selectedConversation.otherParticipant?.name || "Select a conversation"}
+            </span>
+
+            {selectedConversation.isGroup && (
+              <p className="mt-1 text-sm text-slate-400">
+                Members:{" "}
+                {selectedConversation.participants
+                  ?.map((p) => p.name)
+                  .join(", ")}
+              </p>
+            )}
           </div>
           <div className="flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
             <Messages />
           </div>
+          {isTyping && (
+            <div className="mt-2 rounded-2xl bg-slate-800 px-4 py-2 text-sm text-slate-300">
+              Typing...
+            </div>
+          )}
           <MessageInput />
         </>
       )}

@@ -16,6 +16,23 @@ const GroupChatSchema = new mongoose.Schema({
                 default:[],
             },
         ],
+        isGroup: {
+            type: Boolean,
+            default: false,
+        },
+        groupName: {
+            type: String,
+            required: false,
+        },
+        groupAdmin: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: false,
+        },
+        lastMessage: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Message',
+        },
     },
     { timestamps: true}
 );

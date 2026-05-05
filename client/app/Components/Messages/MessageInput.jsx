@@ -1,17 +1,51 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { BsSend } from "react-icons/bs";
 import { useUserContext } from "@/context/UserContext.js";
 
 const MessageInput = () => {
 	const [message, setMessage] = useState("");
-	const { loading, sendMessage } = useUserContext();
+	const timeoutRef = useRef(null);
+	const { loading, sendMessage, socket, selectedConversation, user } = useUserContext();
+
+	const emitTyping = (isTyping) => {
+		if (!socket || !selectedConversation?.otherParticipant?._id || !user?._id) return;
+		socket.emit("typing", {
+			senderId: user._id,
+			receiverId: selectedConversation.otherParticipant._id,
+			isTyping,
+		});
+	};
+
+	const handleChange = (e) => {
+		const value = e.target.value;
+		setMessage(value);
+
+		if (!value.trim()) {
+			emitTyping(false);
+			clearTimeout(timeoutRef.current);
+			return;
+		}
+
+		emitTyping(true);
+		clearTimeout(timeoutRef.current);
+		timeoutRef.current = setTimeout(() => emitTyping(false), 800);
+	};
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-		if (!message) return;
-		await sendMessage(message);
+		if (!message.trim()) return;
+		await sendMessage(message.trim());
 		setMessage("");
+		emitTyping(false);
+		clearTimeout(timeoutRef.current);
 	};
+
+	useEffect(() => {
+		return () => {
+			emitTyping(false);
+			clearTimeout(timeoutRef.current);
+		};
+	}, [selectedConversation?._id, socket]);
 
 	return (
 		<form className='px-4 my-3' onSubmit={handleSubmit}>
