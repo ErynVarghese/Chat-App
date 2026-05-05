@@ -6,22 +6,31 @@ const Conversation = ({ conversation, lastIdx, emoji }) => {
 	const { selectedConversation, setSelectedConversation } = useUserContext();
 
 	const isSelected = selectedConversation?._id === conversation._id;
-	console.log(isSelected);
-
+	const avatarSeed = conversation.email || conversation.name || conversation._id;
+	const avatarUrl = conversation.photo || `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
 	return (
 		<>
 			<div
-				className={`flex gap-2 items-center hover:bg-sky-500 rounded p-2 py-1 cursor-pointer
-				${isSelected ? "bg-sky-500" : ""}
-			`}
+				className={`flex gap-3 items-center rounded p-2 py-1 cursor-pointer transition-colors duration-200 ${isSelected ? "bg-sky-500" : "hover:bg-slate-800"}`}
 				onClick={() => setSelectedConversation(conversation)}
 			>
-
+				<div className='h-11 w-11 overflow-hidden rounded-full bg-slate-700'>
+					<img
+						className='h-full w-full object-cover'
+						src={avatarUrl}
+						alt={`${conversation.name} avatar`}
+						onError={(e) => {
+						e.target.onerror = null;
+						e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(avatarSeed)}`;
+					}}
+					/>
+				</div>
 
 				<div className='flex flex-col flex-1'>
-					<div className='flex gap-3 justify-between'>
-						<p className='font-bold text-black-200'>{conversation.name}</p>			
+					<div className='flex flex-col'>
+						<p className='font-semibold text-slate-100'>{conversation.name}</p>
+						<p className='text-sm text-slate-400'>{conversation.email}</p>
 					</div>
 				</div>
 			</div>

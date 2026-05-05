@@ -87,12 +87,21 @@ export const UserContextProvider = ({children}) => {
             setUserState({
                 email: "",
                 password: "",
-                
+            });
+
+            const { _id, name, email, role, photo, bio, isVerified, token } = res.data;
+            setUser({
+                _id,
+                name,
+                email,
+                role,
+                photo,
+                bio,
+                isVerified,
+                token,
             });
 
             router.push("/");
-
-            
         } catch (error) {
             console.log("Error logging  user", error);
             toast.error(error.response.data.message);
@@ -115,9 +124,14 @@ export const UserContextProvider = ({children}) => {
             }
 
         } catch (error) {
+            if (error.response?.status === 401) {
+                setLoading(false);
+                return false;
+            }
+
             console.log("Error checking login status", error);
-           // setLoading(false);
-           // router.push("/login");            
+            setLoading(false);
+            return false;
         }
 
         console.log("Logged in?" , LogIn)
@@ -329,7 +343,7 @@ export const UserContextProvider = ({children}) => {
 
    
     const [conversations, setConversations] = useState([]);
-
+    const [searchQuery, setSearchQuery] = useState("");
 
    // Function to get messages
   const getMessages = async () => {
@@ -426,6 +440,8 @@ export const UserContextProvider = ({children}) => {
   
     // Fetch conversations on component mount
     useEffect(() => {
+        if (!user?._id) return;
+        
       const getConversations = async () => {
         setLoading(true);
         try {
@@ -446,7 +462,7 @@ export const UserContextProvider = ({children}) => {
       };
   
       getConversations();
-    }, []);
+    }, [user?._id]);
 
     // update the fields in UserState
     const updateUserState = (name) => (e) => {
@@ -501,11 +517,13 @@ export const UserContextProvider = ({children}) => {
             setMessages,
             conversations,
             setConversations,
-            sendMessage,            
+            sendMessage,
             allUsers,
             getMessages,
             socket,
-            onlineUsers,        	
+            onlineUsers,
+            searchQuery,
+            setSearchQuery,
         }}>
             {children}
         </UserContext.Provider>

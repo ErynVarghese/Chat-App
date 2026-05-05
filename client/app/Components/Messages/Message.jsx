@@ -15,7 +15,12 @@ const Message = ({ message }) => {
     .toUpperCase();
 
   const profilePic = fromMe ? user.photo : selectedConversation?.photo;
-  const hasProfileImage = profilePic && profilePic.trim() !== "";
+  const myProfilePic = user?.photo;
+  const otherProfilePic = selectedConversation?.photo;
+
+  const getAvatarSeed = (item) => item?.email || item?.name || "User";
+  const otherAvatarSeed = getAvatarSeed(selectedConversation);
+  const myAvatarSeed = getAvatarSeed(user);
 
   const bubbleClasses = fromMe
     ? "bg-blue-500 text-white rounded-3xl rounded-br-none"
@@ -24,12 +29,19 @@ const Message = ({ message }) => {
   return (
     <div className={`flex ${fromMe ? "justify-end" : "justify-start"} px-3 py-1`}>
       {!fromMe && (
-        <div className="mr-2 mt-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white">
-          {hasProfileImage ? (
-            <img className="h-10 w-10 rounded-full object-cover" src={profilePic} alt="Avatar" />
-          ) : (
-            <span>{initials}</span>
-          )}
+        <div className="mr-2 mt-auto h-10 w-10 overflow-hidden rounded-full bg-slate-700">
+          <img
+            className="h-full w-full object-cover"
+            src={
+              otherProfilePic ||
+              `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(otherAvatarSeed)}`
+            }
+            alt={`${selectedConversation?.name || "User"} avatar`}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(otherAvatarSeed)}`;
+            }}
+          />
         </div>
       )}
 
@@ -43,12 +55,19 @@ const Message = ({ message }) => {
       </div>
 
       {fromMe && (
-        <div className="ml-2 mt-auto flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-          {hasProfileImage ? (
-            <img className="h-10 w-10 rounded-full object-cover" src={profilePic} alt="Avatar" />
-          ) : (
-            <span>{(user.name || "Me").slice(0, 2).toUpperCase()}</span>
-          )}
+        <div className="ml-2 mt-auto h-10 w-10 overflow-hidden rounded-full bg-blue-600">
+          <img
+            className="h-full w-full object-cover"
+            src={
+              myProfilePic ||
+              `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(myAvatarSeed)}`
+            }
+            alt={`${user?.name || "Me"} avatar`}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(myAvatarSeed)}`;
+            }}
+          />
         </div>
       )}
     </div>
