@@ -83,8 +83,12 @@ export const getMessages = async (req, res) => {
             _id: conversationId,
             participants: userId,
         }).populate({
-            path: "messages",
-            options: { sort: { createdAt: 1 } },
+        path: "messages",
+        options: { sort: { createdAt: 1 } },
+        populate: {
+            path: "senderId",
+            select: "name email photo",
+        },
         });
 
         if(!conversation){

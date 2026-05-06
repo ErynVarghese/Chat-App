@@ -38,7 +38,7 @@ function RegisterForm() {
           id="name"
           value={name}
           onChange={(e) => updateUserState("name")(e)}
-          placeholder="Eryn Renchi Varghese"
+          placeholder="John Doe"
           className="p-3 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         />
       </div>
@@ -52,7 +52,7 @@ function RegisterForm() {
           id="email"
           value={email}
           onChange={(e) => updateUserState("email")(e)}
-          placeholder="eryn@gmail.com"
+          placeholder="johndoe@gmail.com"
           className="p-3 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         />
       </div>

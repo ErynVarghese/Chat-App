@@ -31,47 +31,59 @@ export const registerUser = asyncHandler(async (req, res) => {
     }
 
 
-    const user = await User.create({ 
-        name, 
-        email, 
-        password 
+    const user = await User.create({
+        name,
+        email,
+        password,
+        isVerified: false // Explicitly set to false
     });
 
-    // Generate JWT token
-    const token = generateToken(user._id);
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(20).toString('hex') + user._id;
+    const hashedTokenValue = hashedToken(verificationToken);
 
-    res.cookie("token", token, { 
-        path: '/',
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 45, 
-        sameSite: true,
-        secure: process.env.NODE_ENV === "production",
-    });
+    await new Token({
+        userId: user._id,
+        verificationToken: hashedTokenValue,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 3600000, // 1 hour
+    }).save();
 
-    console.log (token);
+    // Send verification email
+    const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+    const subject = 'Email Verification - Chat App';
+    const send_to = user.email;
+    const reply_to = 'noreply@chatapp.com';
+    const template = "EmailVerifTemplate";
+    const name_user = user.name;
+    const link = verificationLink;
+    const send_from = process.env.USER_EMAIL;
+
+    try {
+        await SendEmail(subject, send_to, reply_to, template, name_user, link, send_from);
+        res.status(201).json({
+            message: 'User registered successfully. Please check your email to verify your account.'
+        });
+    } catch (error) {
+        console.error("Email sending error:", error);
+
+          console.error(
+            "SendGrid error body:",
+            JSON.stringify(error.response?.body, null, 2)
+        );
 
 
-    if (user){
-        const { _id, name, email, role, photo , bio , isVerified } = user;
+        await Token.deleteOne({ userId: user._id });
+        await User.deleteOne({ _id: user._id });
 
-        res.status(201).json({ message: 'User registered successfully', 
-            user: {         
-            _id,
-            name, 
-            email,
-            role,
-            photo,
-            bio, 
-            isVerified, 
-            token,
-        } });
-    } else {
-        res.status(400).json({ message: 'Invalid User data' });
+        return res.status(500).json({
+            message: "Registration failed because verification email could not be sent.",
+        });
     }
-
 });
 
-// login 
+// login
 export const loginUser = asyncHandler(async (req, res) => {
 
     const {email , password} = req.body;
@@ -82,13 +94,14 @@ export const loginUser = asyncHandler(async (req, res) => {
 
     const userExists = await User.findOne({ email });
 
-    console.log("USEREXISTS", userExists);
-
     if (!userExists) {
         return res.status(401).json({ message: 'User not found, please Register' });
     }
 
-    console.log(userExists.password,password);
+    // Check if email is verified
+    if (!userExists.isVerified) {
+        return res.status(401).json({ message: 'Please verify your email before logging in' });
+    }
 
     const isMatch = await bcrypt.compare(password, userExists.password);
 
@@ -100,24 +113,24 @@ export const loginUser = asyncHandler(async (req, res) => {
 
     if (userExists && isMatch){
         const { _id, name, email, role, photo , bio , isVerified } = userExists;
-    
 
-    res.cookie("token", token, { 
+
+    res.cookie("token", token, {
         path: '/',
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 45, 
+        maxAge: 1000 * 60 * 60 * 24 * 45,
         sameSite: true,
         secure: process.env.NODE_ENV === "production",
     });
 
-    res.status(200).json({ message: 'User logged in successfully', 
+    res.status(200).json({ message: 'User logged in successfully',
         _id,
-        name, 
+        name,
         email,
         role,
         photo,
         bio,
-        isVerified, 
+        isVerified,
         token,
      });
     } else {

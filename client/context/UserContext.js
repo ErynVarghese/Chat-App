@@ -52,7 +52,7 @@ export const UserContextProvider = ({children}) => {
             
    
             console.log(res.data);
-            toast.success("Registration successful!");
+            toast.success("Registration successful! Please check your email to verify your account.");
 
             setUserState({
                 name: "",

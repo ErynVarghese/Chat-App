@@ -47,7 +47,7 @@ function ForgotPasswordForm() {
           id="email"
           value={email}
           onChange={handleEmailChange}
-          placeholder="eryn@gmail.com"
+          placeholder="johndoe@gmail.com"
           className="p-3 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         />
       </div>

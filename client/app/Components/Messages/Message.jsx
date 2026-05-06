@@ -4,7 +4,8 @@ import { extractTime } from "@/hooks/extractTime";
 const Message = ({ message }) => {
   const { user, selectedConversation } = useUserContext();
 
-  const fromMe = message.senderId === user._id;
+
+  const fromMe = message.senderId?._id === user._id || message.senderId === user._id;
   const formattedTime = extractTime(message.createdAt);
   const otherName = selectedConversation?.otherParticipant?.name || "User";
   const initials = otherName
@@ -17,6 +18,18 @@ const Message = ({ message }) => {
   const profilePic = fromMe ? user.photo : selectedConversation?.otherParticipant?.photo;
   const myProfilePic = user?.photo;
   const otherProfilePic = selectedConversation?.otherParticipant?.photo;
+
+    const sender = message.sender || message.senderId;
+  const senderName = fromMe
+    ? user?.name
+    : selectedConversation?.isGroup
+      ? sender?.name || "Unknown User"
+      : selectedConversation?.otherParticipant?.name || "User";
+
+  const senderAvatarSeed = sender?.email || senderName || "User";
+  const senderPhoto = selectedConversation?.isGroup
+    ? sender?.photo
+    : selectedConversation?.otherParticipant?.photo;
 
   const getAvatarSeed = (item) => item?.email || item?.name || "User";
   const otherAvatarSeed = getAvatarSeed(selectedConversation?.otherParticipant);
@@ -33,19 +46,25 @@ const Message = ({ message }) => {
           <img
             className="h-full w-full object-cover"
             src={
-              otherProfilePic ||
-              `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(otherAvatarSeed)}`
+              senderPhoto ||
+              `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(senderAvatarSeed)}`
             }
-            alt={`${selectedConversation?.otherParticipant?.name || "User"} avatar`}
+            alt={`${senderName} avatar`}
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(otherAvatarSeed)}`;
+              e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(senderAvatarSeed)}`;
             }}
           />
         </div>
       )}
 
       <div className="max-w-[80%]">
+{selectedConversation?.isGroup && !fromMe && (
+  <p className="mb-1 ml-1 text-xs font-semibold text-slate-400">
+    {sender?.name || "Unknown User"}
+  </p>
+)}
+
         <div className={`${bubbleClasses} p-4 shadow-lg`}>
           <p className="whitespace-pre-wrap break-words text-sm leading-6">{message.message}</p>
         </div>
