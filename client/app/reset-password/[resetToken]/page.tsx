@@ -1,15 +1,13 @@
 "use client";
 
-import ResetForm from '@/app/Components/auth/ResetForm/ResetForm';
-import React from 'react';
+import ResetForm from "@/app/Components/auth/ResetForm/ResetForm";
+import { useParams } from "next/navigation";
+import React from "react";
 
-interface Props {
-  params: {
-    resetToken: string; // Define resetToken from params
-  };
-}
+function Page() {
+  const params = useParams();
+  const resetToken = params.resetToken as string;
 
-function page({ params: { resetToken } }: Props) {
   return (
     <div className="login-page w-full h-full flex justify-center items-center">
       <ResetForm resetToken={resetToken} />
@@ -17,4 +15,4 @@ function page({ params: { resetToken } }: Props) {
   );
 }
 
-export default page;
+export default Page;

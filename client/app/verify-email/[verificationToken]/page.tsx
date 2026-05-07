@@ -1,17 +1,12 @@
 "use client";
 
-
 import { useUserContext } from "@/context/UserContext";
+import { useParams } from "next/navigation";
 import React from "react";
 
-interface Props {
-  params: {
-    verificationToken: string;
-  };
-}
-
-function page({ params }: Props) {
-  const { verificationToken } =  params;
+function Page() {
+  const params = useParams();
+  const verificationToken = params.verificationToken as string;
 
   const { verifyUser } = useUserContext();
 
@@ -21,6 +16,7 @@ function page({ params }: Props) {
         <h1 className="text-center text-2xl font-bold text-blue-700">
           Verify Your Account
         </h1>
+
         <p className="text-center text-sm text-blue-600">
           Click the button below to verify your account.
         </p>
@@ -37,4 +33,4 @@ function page({ params }: Props) {
   );
 }
 
-export default page;
+export default Page;
