@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
+import { createClient } from "redis";
+import { createAdapter } from "@socket.io/redis-adapter";
 
 const app = express();
 
@@ -9,8 +11,25 @@ const io = new Server(server, {
 	cors: {
 		origin: ["http://localhost:3000"],
 		methods: ["GET", "POST"],
+		credentials: true,
 	},
 });
+
+const redisUrl = process.env.REDIS_URL;
+
+if (redisUrl) {
+  const pubClient = createClient({ url: redisUrl });
+  const subClient = pubClient.duplicate();
+
+  Promise.all([pubClient.connect(), subClient.connect()])
+    .then(() => {
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log("Socket.IO Redis adapter connected");
+    })
+    .catch((error) => {
+      console.error("Socket.IO Redis adapter error:", error.message);
+    });
+}
 
 export const getReceiverSocketId = (receiverId) => {
 	return userSocketMap[receiverId];

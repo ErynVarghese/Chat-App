@@ -1,14 +1,35 @@
 services:
-  backend:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend-1:
     build: ./backend
     env_file:
       - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379
     ports:
       - "8000:8000"
+    depends_on:
+      - redis
+
+  backend-2:
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "8002:8000"
+    depends_on:
+      - redis
 
   client:
     build: ./client
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      - backend-1
+      - backend-2
