@@ -61,4 +61,5 @@ routeFiles.forEach((file) => {
 server.listen(port, () => {
 	connect();
 	console.log(`Server Running on port ${port}`);
+  console.log(`Container: ${process.env.HOSTNAME}`);
 });
