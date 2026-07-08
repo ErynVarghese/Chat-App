@@ -19,12 +19,12 @@ const MessageContainer = () => {
   }, []);
 
   return (
-    <section className="flex min-h-full flex-1 flex-col bg-slate-900 text-white rounded-r-3xl p-4 shadow-lg md:min-w-[0]">
+    <section className="flex h-full min-h-0 flex-1 flex-col bg-slate-900 text-white rounded-r-3xl p-4 shadow-lg md:min-w-[0]">
       {!selectedConversation ? (
         <NoChatSelected />
       ) : (
         <>
-          <div className="mb-2 rounded-t-2xl bg-slate-800 px-4 py-3 text-white shadow-sm">
+          <div className="mb-2 shrink-0 rounded-t-2xl bg-slate-800 px-4 py-3 text-white shadow-sm">
             <span className="block text-sm text-slate-400">Chatting with</span>
 
             <span className="text-xl font-semibold">
@@ -42,11 +42,11 @@ const MessageContainer = () => {
               </p>
             )}
           </div>
-          <div className="flex-1 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+          <div className="flex flex-1 min-h-0 flex-col rounded-2xl border border-slate-700 bg-slate-950">
             <Messages />
           </div>
           {isTyping && (
-            <div className="mt-2 rounded-2xl bg-slate-800 px-4 py-2 text-sm text-slate-300">
+             <div className="mt-2 shrink-0 rounded-2xl bg-slate-800 px-4 py-2 text-sm text-slate-300">
               Typing...
             </div>
           )}

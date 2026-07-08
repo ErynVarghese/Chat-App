@@ -30,6 +30,13 @@ const messageSchema = new mongoose.Schema({
     },
 } , {timestamps: true});
 
+// Compound index: helps MongoDB quickly find messages for one conversation
+// and return them in newest-first order.
+messageSchema.index({ conversationId: 1, createdAt: -1 });
+
+// Tie-breaker index: used when multiple messages have very close timestamps.
+messageSchema.index({ conversationId: 1, _id: -1 });
+
 const Message = mongoose.model("Message", messageSchema);
 
 export default Message;

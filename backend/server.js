@@ -58,8 +58,14 @@ routeFiles.forEach((file) => {
 
 
 
-server.listen(port, () => {
-	connect();
-	console.log(`Server Running on port ${port}`);
-  console.log(`Container: ${process.env.HOSTNAME}`);
-});
+connect()
+  .then(() => {
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`Server Running on port ${port}`);
+      console.log(`Container: ${process.env.HOSTNAME}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to connect to MongoDB:", err);
+    process.exit(1);
+  });

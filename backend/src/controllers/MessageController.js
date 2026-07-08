@@ -79,50 +79,93 @@ export const getMessages = async (req, res) => {
         const { id: conversationId } = req.params;
         const userId = req.user._id;
 
+        // Page size: default 20, max 50 so one request cannot load too much data.
+        const limit = Math.min(Number(req.query.limit) || 20, 50);
+
+        // Cursor pagination: "before" means load messages older than this timestamp.
+        const before = req.query.before;
+
+        // Authorization check: make sure the user belongs to this conversation.
         const conversation = await GroupChat.findOne({
-            _id: conversationId,
-            participants: userId,
-        }).populate({
-        path: "messages",
-        options: { sort: { createdAt: 1 } },
-        populate: {
-            path: "senderId",
-            select: "name email photo",
-        },
+        _id: conversationId,
+        participants: userId,
         });
 
-        if(!conversation){
-            return res.status(200).json([]);
+        if (!conversation) {
+        return res.status(200).json({
+            messages: [],
+            hasMore: false,
+            nextCursor: null,
+        });
         }
 
-        // Mark messages from others as read
-        const otherParticipants = conversation.participants.filter(p => p.toString() !== userId.toString());
-        await Message.updateMany(
-            {
-                conversationId: conversation._id,
-                senderId: { $in: otherParticipants },
-                isRead: false,
-            },
-            { isRead: true }
+        // Indexed query: uses conversationId + createdAt index.
+        const query = {
+        conversationId: conversation._id,
+        };
+
+        // Range query for cursor pagination.
+        if (before) {
+        query.createdAt = { $lt: new Date(before) };
+        }
+
+        // Fetch newest first. limit + 1 lets us know if another page exists.
+        const messages = await Message.find(query)
+        .sort({ createdAt: -1 })
+        .limit(limit + 1)
+        .populate("senderId", "name email photo");
+
+        // Pagination metadata.
+        const hasMore = messages.length > limit;
+
+        // Only return requested page size.
+        const paginatedMessages = messages.slice(0, limit);
+
+        // UI wants oldest → newest, so reverse after fetching newest-first.
+        const orderedMessages = paginatedMessages.reverse();
+
+        // Next cursor = oldest message in this batch.
+        const nextCursor =
+        hasMore && orderedMessages.length > 0
+            ? orderedMessages[0].createdAt
+            : null;
+
+        // Mark messages from others as read.
+        const otherParticipants = conversation.participants.filter(
+        (p) => p.toString() !== userId.toString()
         );
 
-        // Emit messageRead to other participants
-        otherParticipants.forEach(async (participantId) => {
-            const receiverSocketId = getReceiverSocketId(participantId);
-            if (receiverSocketId) {
-                io.to(receiverSocketId).emit("messageRead", {
-                    readerId: userId,
-                    conversationId: conversation._id,
-                });
-            }
+        await Message.updateMany(
+        {
+            conversationId: conversation._id,
+            senderId: { $in: otherParticipants },
+            isRead: false,
+        },
+        { isRead: true }
+        );
+
+        // Emit read receipt event to other participants.
+        otherParticipants.forEach((participantId) => {
+        const receiverSocketId = getReceiverSocketId(participantId);
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("messageRead", {
+            readerId: userId,
+            conversationId: conversation._id,
+            });
+        }
         });
 
-        res.status(200).json(conversation.messages);
-
+        // Paginated API response.
+        res.status(200).json({
+        messages: orderedMessages,
+        hasMore,
+        nextCursor,
+        });
     } catch (error) {
-        
         console.log("Error in getMessages", error.message);
-        res.status(500).json({ message: "Error getting messages", error: error.message });
-  
+        res.status(500).json({
+        message: "Error getting messages",
+        error: error.message,
+        });
     }
-}
+};

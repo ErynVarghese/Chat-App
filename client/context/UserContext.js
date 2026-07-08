@@ -32,7 +32,7 @@ export const UserContextProvider = ({children}) => {
     })
 
     const [loading, setLoading] = useState(false);
-
+    
 
     const RegisterUser = async (e) => {
 
@@ -341,6 +341,48 @@ export const UserContextProvider = ({children}) => {
     const [selectedConversation, setSelectedConversation] = useState(null);
     const [messages, setMessages] = useState([]);
 
+    // Cursor Pagination State
+    const [nextCursor, setNextCursor] = useState(null);
+    const [hasMoreMessages, setHasMoreMessages] = useState(true);
+    const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+
+    // Cursor Pagination
+    // Load older messages when the user scrolls to the top.
+    const loadOlderMessages = async () => {
+
+        if (!selectedConversation?.conversationId || !hasMoreMessages || !nextCursor || loadingOlderMessages) return;
+
+        setLoadingOlderMessages(true);
+
+        try {
+
+            const res = await fetch(
+                `${serverUrl}/api/v1/messages/${selectedConversation.conversationId}?limit=20&before=${nextCursor}`,
+                {
+                    credentials: "include",
+                }
+            );
+
+            const data = await res.json();
+
+            setMessages((prev) => [
+                ...data.messages,
+                ...prev,
+            ]);
+
+            setNextCursor(data.nextCursor);
+            setHasMoreMessages(data.hasMore);
+
+        } catch (error) {
+
+            toast.error(error.message);
+
+        } finally {
+
+            setLoadingOlderMessages(false);
+
+        }
+    };
    
     const [conversations, setConversations] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -350,14 +392,16 @@ export const UserContextProvider = ({children}) => {
     if (!selectedConversation?.conversationId) return;
     setLoading(true);
     try {
-      const res = await fetch(`${serverUrl}/api/v1/messages/${selectedConversation.conversationId}`, {
+      const res = await fetch(`${serverUrl}/api/v1/messages/${selectedConversation.conversationId}?limit=20`, {
         credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to load messages");
       }
-      setMessages(data);
+      setMessages(data.messages);
+      setNextCursor(data.nextCursor);
+      setHasMoreMessages(data.hasMore);
     } catch (error) {
       if (error.message !== "Failed to fetch") {
         toast.error(error.message);
@@ -370,6 +414,8 @@ export const UserContextProvider = ({children}) => {
   
   useEffect(() => {
     setMessages([]);
+    setNextCursor(null);
+    setHasMoreMessages(true);
     getMessages();
   }, [selectedConversation]);
 
@@ -550,6 +596,10 @@ export const UserContextProvider = ({children}) => {
             typingUsers,
             searchQuery,
             setSearchQuery,
+            loadOlderMessages,
+            nextCursor,
+            hasMoreMessages,
+            loadingOlderMessages,
         }}>
             {children}
         </UserContext.Provider>

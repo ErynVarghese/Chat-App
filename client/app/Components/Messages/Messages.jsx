@@ -1,13 +1,22 @@
-import { useEffect, useRef } from "react";
-
+import { useEffect, useRef, useCallback } from "react";
 import Message from "./Message.jsx";
-
 import { useUserContext } from "@/context/UserContext.js";
 
 const Messages = () => {
-    const { messages, loading } = useUserContext();
- 
-  const lastMessageRef = useRef();
+  const {
+    messages,
+    loading,
+    loadOlderMessages,
+    hasMoreMessages,
+    loadingOlderMessages,
+  } = useUserContext();
+
+  const lastMessageRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const isInitialLoadRef = useRef(true);
+  const shouldAutoScrollRef = useRef(true);
+  const previousScrollHeightRef = useRef(0);
+  const initialScrollDoneRef = useRef(false);
 
   const getDayLabel = (dateString) => {
     const date = new Date(dateString);
@@ -21,6 +30,20 @@ const Messages = () => {
     if (diffDays > 1 && diffDays < 7) return date.toLocaleDateString(undefined, { weekday: "long" });
     return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   };
+
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    if (!initialScrollDoneRef.current) return;
+
+    const container = messagesContainerRef.current;
+    const nearTop = container.scrollTop <= 80;
+
+    if (nearTop && hasMoreMessages && !loadingOlderMessages) {
+      previousScrollHeightRef.current = container.scrollHeight;
+      shouldAutoScrollRef.current = false;
+      loadOlderMessages();
+    }
+  }, [hasMoreMessages, loadingOlderMessages, loadOlderMessages]);
 
   const renderMessages = () => {
     const items = [];
@@ -51,13 +74,44 @@ const Messages = () => {
     .slice(-1)[0]?.message?._id;
 
   useEffect(() => {
-    setTimeout(() => {
+    const container = messagesContainerRef.current;
+
+    if (!container) return;
+
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+        initialScrollDoneRef.current = true;
+      });
+      return;
+    }
+
+    if (!shouldAutoScrollRef.current) {
+      const previousScrollHeight = previousScrollHeightRef.current;
+      const currentScrollHeight = container.scrollHeight;
+      container.scrollTop = currentScrollHeight - previousScrollHeight;
+      shouldAutoScrollRef.current = true;
+      return;
+    }
+
+    requestAnimationFrame(() => {
       lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    });
   }, [messages]);
 
   return (
-    <div className="px-4 flex-1 overflow-auto">
+    <div
+      ref={messagesContainerRef}
+      onScroll={handleScroll}
+      className="flex-1  min-h-0  overflow-y-auto px-4"
+    >
+      {loadingOlderMessages && (
+        <p className="py-2 text-center text-sm text-slate-400">
+          Loading older messages...
+        </p>
+      )}
+
       {loading ? (
         <p className="text-center">Loading...</p>
       ) : messages.length > 0 ? (
@@ -69,7 +123,10 @@ const Messages = () => {
               </span>
             </div>
           ) : (
-            <div key={item.key} ref={item.message._id === lastRenderedMessageId ? lastMessageRef : null}>
+            <div
+              key={item.key}
+              ref={item.message._id === lastRenderedMessageId ? lastMessageRef : null}
+            >
               <Message message={item.message} />
             </div>
           )
