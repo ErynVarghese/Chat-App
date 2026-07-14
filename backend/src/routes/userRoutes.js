@@ -4,6 +4,7 @@ import { adminMiddleware, protect } from '../middleware/authMiddleware.js';
 import { deleteUser, getUsers } from '../controllers/auth/AdminController.js';
 import { getMessages, sendMessage } from '../controllers/MessageController.js';
 import { getUsersForSidebar, searchUsers, getConversations, createDirectConversation, createGroupConversation } from '../controllers/ChatUserController.js';
+import { messageRateLimiter } from "../middleware/messageRateLimiter.js";
 
 const router = express.Router();
 
@@ -39,7 +40,7 @@ router.patch("/change-password", protect, ChangePassword);
 
 
 // Chat routes
-router.post("/messages/send/:id", protect, sendMessage);
+router.post("/messages/send/:id", protect, messageRateLimiter, sendMessage);
 
 router.get("/messages/:id", protect, getMessages);
 

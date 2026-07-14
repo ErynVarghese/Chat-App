@@ -495,7 +495,12 @@ export const UserContextProvider = ({children}) => {
         body: JSON.stringify({ message }),
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (!res.ok) {
+        throw new Error(
+            data.message || data.error || "Unable to send message"
+        );
+      }
+
 
       // Update selectedConversation with conversationId if not set
       if (!selectedConversation.conversationId && data.conversationId) {
