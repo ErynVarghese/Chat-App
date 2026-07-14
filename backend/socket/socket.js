@@ -17,47 +17,92 @@ const io = new Server(server, {
 
 const redisUrl = process.env.REDIS_URL;
 
-if (redisUrl) {
-  const pubClient = createClient({ url: redisUrl });
-  const subClient = pubClient.duplicate();
+let presenceClient;
 
-  Promise.all([pubClient.connect(), subClient.connect()])
-    .then(() => {
-      io.adapter(createAdapter(pubClient, subClient));
-      console.log("Socket.IO Redis adapter connected");
-    })
-    .catch((error) => {
-      console.error("Socket.IO Redis adapter error:", error.message);
-    });
+if (redisUrl) {
+	const pubClient = createClient({ url: redisUrl });
+	const subClient = pubClient.duplicate();
+	presenceClient = pubClient.duplicate();
+
+	Promise.all([
+		pubClient.connect(),
+		subClient.connect(),
+		presenceClient.connect(),
+	])
+		.then(() => {
+			io.adapter(createAdapter(pubClient, subClient));
+			console.log("Socket.IO Redis adapter connected");
+		})
+		.catch((error) => {
+			console.error("Socket.IO Redis adapter error:", error.message);
+		});
 }
 
-export const getReceiverSocketId = (receiverId) => {
-	return userSocketMap[receiverId];
+const presenceKey = "online_users";
+
+const getOnlineUsers = async () => {
+	if (!presenceClient?.isReady) return [];
+
+	return presenceClient.hKeys(presenceKey);
 };
 
-const userSocketMap = {}; 
+const addUserConnection = async (userId) => {
+	if (!presenceClient?.isReady) return;
 
-io.on("connection", (socket) => {
+	await presenceClient.hIncrBy(presenceKey, userId, 1);
+};
+
+const removeUserConnection = async (userId) => {
+	if (!presenceClient?.isReady) return;
+
+	const remainingConnections = await presenceClient.hIncrBy(
+		presenceKey,
+		userId,
+		-1
+	);
+
+	if (remainingConnections <= 0) {
+		await presenceClient.hDel(presenceKey, userId);
+	}
+};
+
+io.on("connection", async (socket) => {
 	console.log("User is connected", socket.id);
 
 	const userId = socket.handshake.query.userId;
-	if (userId != "undefined") userSocketMap[userId] = socket.id;
 
-	
-	io.emit("getOnlineUsers", Object.keys(userSocketMap));
+	if (!userId || userId === "undefined") {
+		socket.disconnect(true);
+		return;
+	}
+
+	socket.join(userId);
+
+	try {
+		await addUserConnection(userId);
+		io.emit("getOnlineUsers", await getOnlineUsers());
+	} catch (error) {
+		console.error("Redis presence error:", error.message);
+	}
 
 	socket.on("typing", ({ receiverId, senderId, isTyping }) => {
-		const receiverSocketId = userSocketMap[receiverId];
-		if (receiverSocketId) {
-			io.to(receiverSocketId).emit("typing", { senderId, isTyping });
+		if (receiverId) {
+			io.to(receiverId.toString()).emit("typing", {
+				senderId,
+				isTyping,
+			});
 		}
 	});
 
-	// listen to events
-	socket.on("disconnect", () => {
+	socket.on("disconnect", async () => {
 		console.log("user disconnected", socket.id);
-		delete userSocketMap[userId];
-		io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+		try {
+			await removeUserConnection(userId);
+			io.emit("getOnlineUsers", await getOnlineUsers());
+		} catch (error) {
+			console.error("Redis presence error:", error.message);
+		}
 	});
 });
 

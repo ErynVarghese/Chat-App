@@ -1,4 +1,4 @@
-import { getReceiverSocketId, io } from "../../socket/socket.js";
+import { io } from "../../socket/socket.js";
 import GroupChat from "../models/Chat/GroupChat.js";
 import Message from "../models/Chat/MessageModel.js";
 import asyncHandler from "express-async-handler"; 
@@ -38,11 +38,14 @@ export const sendMessage = asyncHandler(async (req, res) => {
             }
         }
 
-        const receiverId = conversation.participants.find(p => p.toString() !== senderId.toString());
+        const recipientIds = conversation.participants.filter(
+            (participantId) =>
+                participantId.toString() !== senderId.toString()
+        );
 
         const newMessage = new Message({
             senderId: senderId,
-            receiverId: receiverId,
+            receiverId: conversation.isGroup ? null : recipientIds[0],
             conversationId: conversation._id,
             message: message,
         });
@@ -53,11 +56,12 @@ export const sendMessage = asyncHandler(async (req, res) => {
         }
 
         await Promise.all([conversation.save(), newMessage.save()]);
-
-        const receiverSocketId = getReceiverSocketId(receiverId);
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit("newMessage", { ...newMessage.toObject(), conversationId: conversation._id });
-        }
+        recipientIds.forEach((recipientId) => {
+            io.to(recipientId.toString()).emit("newMessage", {
+                ...newMessage.toObject(),
+                conversationId: conversation._id,
+            });
+        });
 
         res.status(201).json({ ...newMessage.toObject(), conversationId: conversation._id }); 
 
@@ -144,15 +148,11 @@ export const getMessages = async (req, res) => {
         { isRead: true }
         );
 
-        // Emit read receipt event to other participants.
         otherParticipants.forEach((participantId) => {
-        const receiverSocketId = getReceiverSocketId(participantId);
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit("messageRead", {
-            readerId: userId,
-            conversationId: conversation._id,
+            io.to(participantId.toString()).emit("messageRead", {
+                readerId: userId,
+                conversationId: conversation._id,
             });
-        }
         });
 
         // Paginated API response.
@@ -168,4 +168,56 @@ export const getMessages = async (req, res) => {
         error: error.message,
         });
     }
+};
+
+export const markConversationAsRead = async (req, res) => {
+  try {
+    const { id: conversationId } = req.params;
+    const userId = req.user._id;
+
+    const conversation = await GroupChat.findOne({
+      _id: conversationId,
+      participants: userId,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        message: "Conversation not found",
+      });
+    }
+
+    const otherParticipants = conversation.participants.filter(
+      (participantId) =>
+        participantId.toString() !== userId.toString()
+    );
+
+    await Message.updateMany(
+      {
+        conversationId: conversation._id,
+        senderId: { $in: otherParticipants },
+        isRead: false,
+      },
+      {
+        isRead: true,
+      }
+    );
+
+    otherParticipants.forEach((participantId) => {
+      io.to(participantId.toString()).emit("messageRead", {
+        readerId: userId,
+        conversationId: conversation._id,
+      });
+    });
+
+    return res.status(200).json({
+      message: "Messages marked as read",
+    });
+  } catch (error) {
+    console.log("Error marking messages as read", error.message);
+
+    return res.status(500).json({
+      message: "Error marking messages as read",
+      error: error.message,
+    });
+  }
 };

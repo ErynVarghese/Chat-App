@@ -1,400 +1,421 @@
-import React, {createContext, useEffect, useRef, useState, useContext} from 'react';
+import React, {
+  createContext,
+  useEffect,
+  useRef,
+  useState,
+  useContext,
+} from "react";
 import { io } from "socket.io-client";
 
-import axios from 'axios';
+import axios from "axios";
 
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import toast from "react-hot-toast";
 
 // User Context
 const UserContext = React.createContext();
 
-axios.defaults.withCredentials = true; 
+axios.defaults.withCredentials = true;
 
-export const UserContextProvider = ({children}) => {
+export const UserContextProvider = ({ children }) => {
+  const serverUrl = "http://localhost:8000";
 
-    const serverUrl = "http://localhost:8000";
+  //next.js router
+  const router = useRouter();
 
-    //next.js router
-    const router = useRouter();
+  // logged-in user detals throughout a session
+  const [user, setUser] = useState({});
 
-    // logged-in user detals throughout a session 
-    const [user, setUser] = useState({});
+  const [allUsers, setAllUsers] = useState([]);
 
-    const [allUsers, setAllUsers] = useState([]);
+  // temporary for form fields (login or registration)
+  const [userState, setUserState] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
-    // temporary for form fields (login or registration)
-    const [userState, setUserState] = useState({
-        name : "",
-        email : "",
-        password : "",
-    })
+  const [loading, setLoading] = useState(false);
 
-    const [loading, setLoading] = useState(false);
-    
+  const RegisterUser = async (e) => {
+    e.preventDefault();
 
-    const RegisterUser = async (e) => {
-
-        e.preventDefault();
-
-        // validation toast
-        if(!userState.email.includes("@") || !userState.password || userState.password.length < 8){
-            toast.error("Please fill all fields");
-            return;
-        }
-
-
-        try {
-
-            // POST request 
-            const res = await axios.post (`${serverUrl}/api/v1/register`, userState);
-            
-   
-            console.log(res.data);
-            toast.success("Registration successful! Please check your email to verify your account.");
-
-            setUserState({
-                name: "",
-                email: "",
-                password: "",                
-            });
-
-            // redirect to login page 
-            router.push('/login');
-
-        } catch (error) {
-           console.log("Error registering user", error);
-           toast.error(error.response.data.message);
-        }
-    }
- 
-
-    const LoginUser = async (e) => {
-        e.preventDefault();
-
-        try {
-            const res = await axios.post(`${serverUrl}/api/v1/login`, {
-                
-                email: userState.email,
-                password: userState.password,
-            }, {
-                withCredentials: true,
-            });
-
-            toast.success("User logged in successfully!");
-
-            setUserState({
-                email: "",
-                password: "",
-            });
-
-            const { _id, name, email, role, photo, bio, isVerified, token } = res.data;
-            setUser({
-                _id,
-                name,
-                email,
-                role,
-                photo,
-                bio,
-                isVerified,
-                token,
-            });
-
-            router.push("/");
-        } catch (error) {
-            console.log("Error logging  user", error);
-            toast.error(error.response.data.message);
-        }
+    // validation toast
+    if (
+      !userState.email.includes("@") ||
+      !userState.password ||
+      userState.password.length < 8
+    ) {
+      toast.error("Please fill all fields");
+      return;
     }
 
-    const userLoginStatus = async () => {
-        let LogIn = false;
-        try {
-            const res = await axios.get(`${serverUrl}/api/v1/login-status`, {
-                withCredentials: true,
-            });
+    try {
+      // POST request
+      const res = await axios.post(`${serverUrl}/api/v1/register`, userState);
 
-            LogIn = !!res.data
-            
-            setLoading(false);
+      console.log(res.data);
+      toast.success(
+        "Registration successful! Please check your email to verify your account.",
+      );
 
-            if(!LogIn){
-                router.push("/login");
-            }
+      setUserState({
+        name: "",
+        email: "",
+        password: "",
+      });
 
-        } catch (error) {
-            if (error.response?.status === 401) {
-                setLoading(false);
-                return false;
-            }
-
-            console.log("Error checking login status", error);
-            setLoading(false);
-            return false;
-        }
-
-        console.log("Logged in?" , LogIn)
-        return LogIn;
+      // redirect to login page
+      router.push("/login");
+    } catch (error) {
+      console.log("Error registering user", error);
+      toast.error(error.response.data.message);
     }
+  };
 
+  const LoginUser = async (e) => {
+    e.preventDefault();
 
-    const LogoutUser = async () => {
-        try {
-            const res = await axios.get(`${serverUrl}/api/v1/logout`, {
-                withCredentials: true,
-            });
+    try {
+      const res = await axios.post(
+        `${serverUrl}/api/v1/login`,
+        {
+          email: userState.email,
+          password: userState.password,
+        },
+        {
+          withCredentials: true,
+        },
+      );
 
-            toast.success("User logged out successfully!");
+      toast.success("User logged in successfully!");
 
-            router.push("/login");
-        } catch (error){
+      setUserState({
+        email: "",
+        password: "",
+      });
 
-            console.log("Error logging out user", error);
-            toast.error(error.response.data.message);
-            router.push("/login");
-        } 
-    };
+      const { _id, name, email, role, photo, bio, isVerified, token } =
+        res.data;
+      setUser({
+        _id,
+        name,
+        email,
+        role,
+        photo,
+        bio,
+        isVerified,
+        token,
+      });
 
-    const GetUser = async () => {
+      router.push("/");
+    } catch (error) {
+      console.log("Error logging  user", error);
+      toast.error(error.response.data.message);
+    }
+  };
 
-        setLoading(true);
+  const userLoginStatus = async () => {
+    let LogIn = false;
+    try {
+      const res = await axios.get(`${serverUrl}/api/v1/login-status`, {
+        withCredentials: true,
+      });
 
-        try {
-            
-            const res = await axios.get(`${serverUrl}/api/v1/user`, {
-                withCredentials: true,
-            });
+      LogIn = !!res.data;
 
-            setUser((prevState) => {
-                return {
-                   ...prevState,
-                   ...res.data,
-                };
-            });
+      setLoading(false);
 
-            setLoading(false);
-
-        } catch (error) {
-            console.log("Ërror fetching user details", error);
-            setLoading(false);
-            toast.error(error.response.data.message);
-        }
-    };
-
-    const updateUser = async(e,data) =>{
-        e.preventDefault();
-        setLoading(true);
-
-        try {
-            const res = await axios.patch(`${serverUrl}/api/v1/user`,data, {
-                withCredentials: true,
-            });
-
-            setUser((prevState) => ({
-                ...prevState,
-                ...res.data,
-            }));
-
-            toast.success("User details updated successfully!");
-
-            setLoading(false);
-
-        } catch (error) {
-            
-            console.log("Error updating user details", error);
-            setLoading(false);
-            toast.error(error.response.data.message);
-        }
-
-    };
-
-    const emailVerification = async () => {
-        console.log("Email verification triggered"); 
-        setLoading(true);
-        
-        try {
-            const res = await axios.post(`${serverUrl}/api/v1/verify-email`, {}, {
-                withCredentials: true, 
-            });
-
-        toast.success("Email verification successful!");
+      if (!LogIn) {
+        router.push("/login");
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
         setLoading(false);
-            
-        } catch (error) {
-            console.log("Error in email verification", error);
+        return false;
+      }
 
-            setLoading(false);
-            toast.error(error.response.data.message);
-        }
-    };
-
-
-    const verifyUser = async (token) => {
-        setLoading(true);
-
-        try {
-            const res = await axios.post(`${serverUrl}/api/v1/verify-user/${token}` ,
-            {} , {
-                withCredentials: true,
-            }
-        );
-
-        toast.success("User verified successfully!");
-        GetUser();
-        setLoading(false);
-
-        router.push("/");
-        
-        } catch (error) {
-            console.log("Error verifying user", error);
-            setLoading(false);
-            toast.error(error.response.data.message);
-            
-        }
+      console.log("Error checking login status", error);
+      setLoading(false);
+      return false;
     }
 
-    const ForgotPassword = async (email) => {
+    console.log("Logged in?", LogIn);
+    return LogIn;
+  };
 
-        setLoading(true);
+  const LogoutUser = async () => {
+    try {
+      const res = await axios.get(`${serverUrl}/api/v1/logout`, {
+        withCredentials: true,
+      });
 
-        try {
-            
-            const res = await axios.post(`${serverUrl}/api/v1/forgot-password`, {
-                email,
-            }, {
-                withCredentials: true,
-            });
+      toast.success("User logged out successfully!");
 
-            toast.success("Password reset link sent to your email!");
-            setLoading(false);
-
-        } catch (error) {
-            console.log("Error in forgot password", error);
-            setLoading(false);
-            toast.error(error.response.data.message);
-            
-        }
+      router.push("/login");
+    } catch (error) {
+      console.log("Error logging out user", error);
+      toast.error(error.response.data.message);
+      router.push("/login");
     }
+  };
 
-    const PasswordReset = async (token , password) => {
+  const GetUser = async () => {
+    setLoading(true);
 
-        setLoading(true);
+    try {
+      const res = await axios.get(`${serverUrl}/api/v1/user`, {
+        withCredentials: true,
+      });
 
-        try {
-            
-            const res = await axios.post(`${serverUrl}/api/v1/reset-password/${token}`, {
-                password,
-            }, {
-                withCredentials: true,
-            });
+      setUser((prevState) => {
+        return {
+          ...prevState,
+          ...res.data,
+        };
+      });
 
-            toast.success("Password reset successful!");
-            router.push("/login");
-            setLoading(false);
+      setLoading(false);
+    } catch (error) {
+      console.log("Ërror fetching user details", error);
+      setLoading(false);
+      toast.error(error.response.data.message);
+    }
+  };
 
-        } catch (error) {
-            
-            console.log("Error in password reset", error);
-            setLoading(false);
-            toast.error(error.response.data.message);
-        }
-    };
+  const updateUser = async (e, data) => {
+    e.preventDefault();
+    setLoading(true);
 
-    const changePassword = async (CurrentPassword, NewPassword) => {
-        setLoading(true);
-        
-        try {
-            
-            const res = await axios.patch(`${serverUrl}/api/v1/change-password`,{CurrentPassword, NewPassword} ,{withCredentials: true});
-            
-            toast.success("Password changed successfully!");
-            setLoading(false);
+    try {
+      const res = await axios.patch(`${serverUrl}/api/v1/user`, data, {
+        withCredentials: true,
+      });
 
-        } catch (error) {
-            
-            console.log("Error in changing password", error);
-            setLoading(false);
-            toast.error(error.response.data.message);
-        }
-    };
+      setUser((prevState) => ({
+        ...prevState,
+        ...res.data,
+      }));
 
-    const getAllUsers = async() => {
-        setLoading(true);
+      toast.success("User details updated successfully!");
 
-        try {
-            const res = await axios.get(`${serverUrl}/api/v1/admin/users`, {
-                withCredentials: true,
-            });
+      setLoading(false);
+    } catch (error) {
+      console.log("Error updating user details", error);
+      setLoading(false);
+      toast.error(error.response.data.message);
+    }
+  };
 
-            setAllUsers(res.data);
-            console.log("Admin users", res.data);
-        } catch (error) {
-            console.log("Error in getting all users", error);
-            setLoading(false);
-            toast.error(error.response?.data?.message || error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const emailVerification = async () => {
+    console.log("Email verification triggered");
+    setLoading(true);
 
-    const [selectedConversation, setSelectedConversation] = useState(null);
-    const [messages, setMessages] = useState([]);
+    try {
+      const res = await axios.post(
+        `${serverUrl}/api/v1/verify-email`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
 
-    // Cursor Pagination State
-    const [nextCursor, setNextCursor] = useState(null);
-    const [hasMoreMessages, setHasMoreMessages] = useState(true);
-    const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+      toast.success("Email verification successful!");
+      setLoading(false);
+    } catch (error) {
+      console.log("Error in email verification", error);
 
-    // Cursor Pagination
-    // Load older messages when the user scrolls to the top.
-    const loadOlderMessages = async () => {
+      setLoading(false);
+      toast.error(error.response.data.message);
+    }
+  };
 
-        if (!selectedConversation?.conversationId || !hasMoreMessages || !nextCursor || loadingOlderMessages) return;
+  const verifyUser = async (token) => {
+    setLoading(true);
 
-        setLoadingOlderMessages(true);
+    try {
+      const res = await axios.post(
+        `${serverUrl}/api/v1/verify-user/${token}`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
 
-        try {
+      toast.success("User verified successfully!");
+      GetUser();
+      setLoading(false);
 
-            const res = await fetch(
-                `${serverUrl}/api/v1/messages/${selectedConversation.conversationId}?limit=20&before=${nextCursor}`,
-                {
-                    credentials: "include",
-                }
-            );
+      router.push("/");
+    } catch (error) {
+      console.log("Error verifying user", error);
+      setLoading(false);
+      toast.error(error.response.data.message);
+    }
+  };
 
-            const data = await res.json();
+  const ForgotPassword = async (email) => {
+    setLoading(true);
 
-            setMessages((prev) => [
-                ...data.messages,
-                ...prev,
-            ]);
+    try {
+      const res = await axios.post(
+        `${serverUrl}/api/v1/forgot-password`,
+        {
+          email,
+        },
+        {
+          withCredentials: true,
+        },
+      );
 
-            setNextCursor(data.nextCursor);
-            setHasMoreMessages(data.hasMore);
+      toast.success("Password reset link sent to your email!");
+      setLoading(false);
+    } catch (error) {
+      console.log("Error in forgot password", error);
+      setLoading(false);
+      toast.error(error.response.data.message);
+    }
+  };
 
-        } catch (error) {
+  const PasswordReset = async (token, password) => {
+    setLoading(true);
 
-            toast.error(error.message);
+    try {
+      const res = await axios.post(
+        `${serverUrl}/api/v1/reset-password/${token}`,
+        {
+          password,
+        },
+        {
+          withCredentials: true,
+        },
+      );
 
-        } finally {
+      toast.success("Password reset successful!");
+      router.push("/login");
+      setLoading(false);
+    } catch (error) {
+      console.log("Error in password reset", error);
+      setLoading(false);
+      toast.error(error.response.data.message);
+    }
+  };
 
-            setLoadingOlderMessages(false);
+  const changePassword = async (CurrentPassword, NewPassword) => {
+    setLoading(true);
 
-        }
-    };
-   
-    const [conversations, setConversations] = useState([]);
-    const [searchQuery, setSearchQuery] = useState("");
+    try {
+      const res = await axios.patch(
+        `${serverUrl}/api/v1/change-password`,
+        { CurrentPassword, NewPassword },
+        { withCredentials: true },
+      );
 
-   // Function to get messages
+      toast.success("Password changed successfully!");
+      setLoading(false);
+    } catch (error) {
+      console.log("Error in changing password", error);
+      setLoading(false);
+      toast.error(error.response.data.message);
+    }
+  };
+
+  const getAllUsers = async () => {
+    setLoading(true);
+
+    try {
+      const res = await axios.get(`${serverUrl}/api/v1/admin/users`, {
+        withCredentials: true,
+      });
+
+      setAllUsers(res.data);
+      console.log("Admin users", res.data);
+    } catch (error) {
+      console.log("Error in getting all users", error);
+      setLoading(false);
+      toast.error(error.response?.data?.message || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+
+  // Cursor Pagination State
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+
+  // Cursor Pagination
+  // Load older messages when the user scrolls to the top.
+  const loadOlderMessages = async () => {
+    if (
+      !selectedConversation?.conversationId ||
+      !hasMoreMessages ||
+      !nextCursor ||
+      loadingOlderMessages
+    )
+      return;
+
+    setLoadingOlderMessages(true);
+
+    try {
+      const res = await fetch(
+        `${serverUrl}/api/v1/messages/${selectedConversation.conversationId}?limit=20&before=${nextCursor}`,
+        {
+          credentials: "include",
+        },
+      );
+
+      const data = await res.json();
+
+      setMessages((prev) => [...data.messages, ...prev]);
+
+      setNextCursor(data.nextCursor);
+      setHasMoreMessages(data.hasMore);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoadingOlderMessages(false);
+    }
+  };
+
+  const [conversations, setConversations] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const markConversationAsRead = async (conversationId) => {
+    try {
+      const res = await fetch(
+        `${serverUrl}/api/v1/messages/read/${conversationId}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+        },
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to mark messages as read");
+      }
+    } catch (error) {
+      console.error("Error marking conversation as read:", error);
+    }
+  };
+
+  // Function to get messages
   const getMessages = async () => {
     if (!selectedConversation?.conversationId) return;
     setLoading(true);
     try {
-      const res = await fetch(`${serverUrl}/api/v1/messages/${selectedConversation.conversationId}?limit=20`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${serverUrl}/api/v1/messages/${selectedConversation.conversationId}?limit=20`,
+        {
+          credentials: "include",
+        },
+      );
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to load messages");
@@ -411,7 +432,6 @@ export const UserContextProvider = ({children}) => {
     }
   };
 
-  
   useEffect(() => {
     setMessages([]);
     setNextCursor(null);
@@ -450,23 +470,75 @@ export const UserContextProvider = ({children}) => {
     });
 
     socketClient.on("messageRead", ({ readerId, conversationId }) => {
-      if (selectedConversationRef.current?.conversationId === conversationId) {
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.senderId === user._id ? { ...msg, isRead: true } : msg
-          )
-        );
+      if (selectedConversationRef.current?.conversationId !== conversationId) {
+        return;
       }
+
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          const senderId =
+            typeof msg.senderId === "object" ? msg.senderId._id : msg.senderId;
+
+          return senderId === user._id ? { ...msg, isRead: true } : msg;
+        }),
+      );
     });
 
     socketClient.on("newMessage", (newMessage) => {
+      setConversations((prevConversations) => {
+        const updated = prevConversations.map((conversation) =>
+          (conversation.conversationId || conversation._id)?.toString() ===
+          newMessage.conversationId?.toString()
+            ? {
+                ...conversation,
+                lastMessage: newMessage,
+              }
+            : conversation,
+        );
+
+        const index = updated.findIndex(
+          (conversation) =>
+            (conversation.conversationId || conversation._id)?.toString() ===
+            newMessage.conversationId?.toString(),
+        );
+
+        if (index <= 0) return updated;
+
+        const [conversation] = updated.splice(index, 1);
+        updated.unshift(conversation);
+
+        return updated;
+      });
+
       const currentSelected = selectedConversationRef.current;
       if (currentSelected) {
-        if (currentSelected.conversationId && newMessage.conversationId === currentSelected.conversationId) {
-          setMessages((prevMessages) => [...prevMessages, newMessage]);
-        } else if (!currentSelected.conversationId && currentSelected.otherParticipant?._id === newMessage.senderId) {
-          setMessages((prevMessages) => [...prevMessages, newMessage]);
-          setSelectedConversation(prev => ({ ...prev, conversationId: newMessage.conversationId }));
+        if (
+          currentSelected.conversationId &&
+          newMessage.conversationId?.toString() ===
+            currentSelected.conversationId?.toString()
+        ) {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { ...newMessage, isRead: true },
+          ]);
+
+          markConversationAsRead(currentSelected.conversationId);
+        } else if (
+          !currentSelected.conversationId &&
+          currentSelected.otherParticipant?._id?.toString() ===
+            newMessage.senderId?.toString()
+        ) {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { ...newMessage, isRead: true },
+          ]);
+
+          setSelectedConversation((prev) => ({
+            ...prev,
+            conversationId: newMessage.conversationId,
+          }));
+
+          markConversationAsRead(newMessage.conversationId);
         }
       }
     });
@@ -474,9 +546,7 @@ export const UserContextProvider = ({children}) => {
     return () => socketClient.close();
   }, [user?._id]);
 
-
-
-     // sendMessage function
+  // sendMessage function
   const sendMessage = async (message) => {
     if (!selectedConversation) {
       toast.error("No conversation selected");
@@ -485,7 +555,9 @@ export const UserContextProvider = ({children}) => {
 
     setLoading(true);
     try {
-      const id = selectedConversation.conversationId || selectedConversation.otherParticipant._id;
+      const id =
+        selectedConversation.conversationId ||
+        selectedConversation.otherParticipant._id;
       const res = await fetch(`${serverUrl}/api/v1/messages/send/${id}`, {
         method: "POST",
         headers: {
@@ -496,15 +568,15 @@ export const UserContextProvider = ({children}) => {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(
-            data.message || data.error || "Unable to send message"
-        );
+        throw new Error(data.message || data.error || "Unable to send message");
       }
-
 
       // Update selectedConversation with conversationId if not set
       if (!selectedConversation.conversationId && data.conversationId) {
-        setSelectedConversation(prev => ({ ...prev, conversationId: data.conversationId }));
+        setSelectedConversation((prev) => ({
+          ...prev,
+          conversationId: data.conversationId,
+        }));
         // Refetch conversations to include the new one
         fetchConversations();
       }
@@ -531,88 +603,85 @@ export const UserContextProvider = ({children}) => {
       console.log(error.message);
     }
   };
-   
-  
+
   useEffect(() => {
     if (!user?._id) return;
-    
+
     fetchConversations();
   }, [user?._id]);
 
-    // update the fields in UserState
-    const updateUserState = (name) => (e) => {
-        const value = e.target.value;
+  // update the fields in UserState
+  const updateUserState = (name) => (e) => {
+    const value = e.target.value;
 
-        setUserState((prevState) => ({
-            ...prevState,
-            [name]: value,
-        }));
+    setUserState((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
+  useEffect(() => {
+    const GetuserLogin = async () => {
+      const isLogIn = await userLoginStatus();
+      console.log("Is logged in", isLogIn);
+
+      if (isLogIn) {
+        await GetUser();
+      }
+    };
+
+    GetuserLogin();
+  }, []);
+
+  useEffect(() => {
+    if (user.role == "admin") {
+      getAllUsers();
     }
+  }, [user.role]);
 
-    useEffect(() => {
-
-        const GetuserLogin = async () => {
-            const isLogIn = await userLoginStatus();
-            console.log("Is logged in", isLogIn);
-
-            if(isLogIn){
-                await GetUser();
-            }
-        };
-
-        GetuserLogin();
-            
-    }, []);
-
-    useEffect(() => {
-       
-        if (user.role == "admin"){
-            getAllUsers();
-        }
-    }, [user.role]);
-
-    return (
-        <UserContext.Provider value= {{
-            RegisterUser, 
-            userState,
-            updateUserState,
-            LoginUser, 
-            LogoutUser,
-            userLoginStatus,
-            user,
-            updateUser,
-            emailVerification,
-            verifyUser,
-            ForgotPassword,
-            PasswordReset,
-            changePassword,
-            selectedConversation,
-            setSelectedConversation,
-            messages,
-            setMessages,
-            conversations,
-            setConversations,
-            fetchConversations,
-            sendMessage,
-            allUsers,
-            getMessages,
-            socket,
-            onlineUsers,
-            typingUsers,
-            searchQuery,
-            setSearchQuery,
-            loadOlderMessages,
-            nextCursor,
-            hasMoreMessages,
-            loadingOlderMessages,
-        }}>
-            {children}
-        </UserContext.Provider>
-       
-    );
+  return (
+    <UserContext.Provider
+      value={{
+        RegisterUser,
+        userState,
+        updateUserState,
+        LoginUser,
+        LogoutUser,
+        userLoginStatus,
+        user,
+        updateUser,
+        emailVerification,
+        verifyUser,
+        ForgotPassword,
+        PasswordReset,
+        changePassword,
+        selectedConversation,
+        setSelectedConversation,
+        messages,
+        setMessages,
+        conversations,
+        setConversations,
+        fetchConversations,
+        sendMessage,
+        allUsers,
+        getMessages,
+        socket,
+        onlineUsers,
+        typingUsers,
+        searchQuery,
+        setSearchQuery,
+        loadOlderMessages,
+        nextCursor,
+        hasMoreMessages,
+        loadingOlderMessages,
+      }}
+    >
+      {children}
+    </UserContext.Provider>
+  );
 };
 
 // Custom hook to access user context - next time you dont have to import UseContext again
 export const useUserContext = () => {
-    return useContext(UserContext);
-}
+  return useContext(UserContext);
+};

@@ -2,7 +2,7 @@ import express from 'express';
 import { ChangePassword, forgotPassword, loginUser, logoutUser, registerUser , resetPassword, updateUserProfile, userLoginStatus, UserProfile, verifyEmail, verifyUser} from '../controllers/auth/UserController.js';
 import { adminMiddleware, protect } from '../middleware/authMiddleware.js';
 import { deleteUser, getUsers } from '../controllers/auth/AdminController.js';
-import { getMessages, sendMessage } from '../controllers/MessageController.js';
+import { getMessages, sendMessage, markConversationAsRead } from '../controllers/MessageController.js';
 import { getUsersForSidebar, searchUsers, getConversations, createDirectConversation, createGroupConversation } from '../controllers/ChatUserController.js';
 import { messageRateLimiter } from "../middleware/messageRateLimiter.js";
 
@@ -53,6 +53,8 @@ router.get("/conversations", protect, getConversations);
 router.post("/conversations/direct", protect, createDirectConversation);
 
 router.post("/conversations/group", protect, createGroupConversation);
+
+router.patch("/messages/read/:id", protect, markConversationAsRead);
 
 export default router;
 

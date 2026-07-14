@@ -16,19 +16,36 @@ const Messages = () => {
   const isInitialLoadRef = useRef(true);
   const shouldAutoScrollRef = useRef(true);
   const previousScrollHeightRef = useRef(0);
+  const previousScrollTopRef = useRef(0);
   const initialScrollDoneRef = useRef(false);
+  const previousLastMessageIdRef = useRef(null);
 
   const getDayLabel = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
-    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const diffDays = Math.round((startOfToday - startOfDate) / (1000 * 60 * 60 * 24));
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+    const startOfDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
+    const diffDays = Math.round(
+      (startOfToday - startOfDate) / (1000 * 60 * 60 * 24),
+    );
 
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";
-    if (diffDays > 1 && diffDays < 7) return date.toLocaleDateString(undefined, { weekday: "long" });
-    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    if (diffDays > 1 && diffDays < 7)
+      return date.toLocaleDateString(undefined, { weekday: "long" });
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   const handleScroll = useCallback(() => {
@@ -40,6 +57,7 @@ const Messages = () => {
 
     if (nearTop && hasMoreMessages && !loadingOlderMessages) {
       previousScrollHeightRef.current = container.scrollHeight;
+      previousScrollTopRef.current = container.scrollTop;
       shouldAutoScrollRef.current = false;
       loadOlderMessages();
     }
@@ -76,29 +94,48 @@ const Messages = () => {
   useEffect(() => {
     const container = messagesContainerRef.current;
 
-    if (!container) return;
+    if (!container || messages.length === 0) return;
 
     if (isInitialLoadRef.current) {
       isInitialLoadRef.current = false;
+
       requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight;
         initialScrollDoneRef.current = true;
+        previousLastMessageIdRef.current = lastRenderedMessageId;
       });
+
       return;
     }
 
+    // Older messages were prepended.
     if (!shouldAutoScrollRef.current) {
-      const previousScrollHeight = previousScrollHeightRef.current;
-      const currentScrollHeight = container.scrollHeight;
-      container.scrollTop = currentScrollHeight - previousScrollHeight;
-      shouldAutoScrollRef.current = true;
+      requestAnimationFrame(() => {
+        const previousScrollHeight = previousScrollHeightRef.current;
+        const currentScrollHeight = container.scrollHeight;
+
+        container.scrollTop =
+          previousScrollTopRef.current +
+          (currentScrollHeight - previousScrollHeight);
+
+        shouldAutoScrollRef.current = true;
+        previousLastMessageIdRef.current = lastRenderedMessageId;
+      });
+
       return;
     }
 
-    requestAnimationFrame(() => {
-      lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
-    });
-  }, [messages]);
+    // Only scroll down when a genuinely new latest message was added.
+    if (previousLastMessageIdRef.current !== lastRenderedMessageId) {
+      requestAnimationFrame(() => {
+        lastMessageRef.current?.scrollIntoView({
+          behavior: "smooth",
+        });
+
+        previousLastMessageIdRef.current = lastRenderedMessageId;
+      });
+    }
+  }, [messages, lastRenderedMessageId]);
 
   return (
     <div
@@ -125,11 +162,15 @@ const Messages = () => {
           ) : (
             <div
               key={item.key}
-              ref={item.message._id === lastRenderedMessageId ? lastMessageRef : null}
+              ref={
+                item.message._id === lastRenderedMessageId
+                  ? lastMessageRef
+                  : null
+              }
             >
               <Message message={item.message} />
             </div>
-          )
+          ),
         )
       ) : (
         <p className="text-center">Send a message to start the conversation</p>

@@ -25,7 +25,7 @@ const Conversation = ({ conversation, lastIdx, emoji }) => {
 	return (
 		<>
 			<div
-				className={`flex gap-3 items-center rounded p-2 py-1 cursor-pointer transition-colors duration-200 ${isSelected ? "bg-sky-500" : "hover:bg-slate-800"}`}
+				className={`flex min-w-0 items-center gap-3 rounded p-2 py-1 cursor-pointer transition-colors duration-200 ${isSelected ? "bg-sky-500" : "hover:bg-slate-800"}`}
 				onClick={() => setSelectedConversation(conversation)}
 			>
 				<div className='relative h-11 w-11 overflow-hidden rounded-full bg-slate-700'>
@@ -41,10 +41,10 @@ const Conversation = ({ conversation, lastIdx, emoji }) => {
 					<span className={`absolute bottom-0 end-0 h-3 w-3 rounded-full border-2 border-slate-900 ${isOnline ? "bg-emerald-400" : "bg-slate-500"}`} />
 				</div>
 
-				<div className='flex flex-col flex-1'>
-					<div className='flex flex-col'>
-						<p className='font-semibold text-slate-100'>{displayName}</p>
-						<p className='text-sm text-slate-400 line-clamp-1'>
+				<div className='flex min-w-0 flex-1 flex-col'>
+					<div className='flex min-w-0 flex-col'>
+						<p className='truncate font-semibold text-slate-100'>{displayName}</p>
+						<p className='truncate text-sm text-slate-400 line-clamp-1'>
 						{displaySub}
 					</p>
 					</div>

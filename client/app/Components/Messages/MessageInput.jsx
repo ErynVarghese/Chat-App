@@ -8,10 +8,13 @@ const MessageInput = () => {
 	const { loading, sendMessage, socket, selectedConversation, user } = useUserContext();
 
 	const emitTyping = (isTyping) => {
-		if (!socket || !selectedConversation?.otherParticipant?._id || !user?._id) return;
+		const receiverId = selectedConversation?.otherParticipant?._id;
+
+		if (!socket || !receiverId || !user?._id) return;
+
 		socket.emit("typing", {
 			senderId: user._id,
-			receiverId: selectedConversation.otherParticipant._id,
+			receiverId,
 			isTyping,
 		});
 	};

@@ -10,7 +10,9 @@ const MessageContainer = () => {
   const { user } = useUserContext();
   const { selectedConversation, setSelectedConversation, typingUsers } = useUserContext();
 
-  const isTyping = selectedConversation && typingUsers[selectedConversation.conversationId || selectedConversation.otherParticipant?._id];
+  const isTyping =
+  !selectedConversation?.isGroup &&
+  typingUsers[selectedConversation?.otherParticipant?._id];
 
   console.log("1", selectedConversation);
 
@@ -19,7 +21,7 @@ const MessageContainer = () => {
   }, []);
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col bg-slate-900 text-white rounded-r-3xl p-4 shadow-lg md:min-w-[0]">
+    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-r-3xl bg-slate-900 p-4 text-white shadow-lg">
       {!selectedConversation ? (
         <NoChatSelected />
       ) : (
@@ -27,14 +29,14 @@ const MessageContainer = () => {
           <div className="mb-2 shrink-0 rounded-t-2xl bg-slate-800 px-4 py-3 text-white shadow-sm">
             <span className="block text-sm text-slate-400">Chatting with</span>
 
-            <span className="text-xl font-semibold">
+            <span className="block truncate text-xl font-semibold">
               {selectedConversation.isGroup
                 ? selectedConversation.groupName
                 : selectedConversation.otherParticipant?.name || "Select a conversation"}
             </span>
 
             {selectedConversation.isGroup && (
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 truncate text-sm text-slate-400">
                 Members:{" "}
                 {selectedConversation.participants
                   ?.map((p) => p.name)
